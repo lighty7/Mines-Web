@@ -1,0 +1,23 @@
+name: Keep Render Alive
+
+on:
+  schedule:
+    # Runs every 14 minutes to prevent Render free-tier inactivity sleep (sleeps at 15m)
+    - cron: '*/14 * * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions
+
+jobs:
+  keep-alive:
+    name: Ping Render Health Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Backend
+        run: |
+          echo "Pinging live Render server at https://mines-backend-mex2.onrender.com/health ..."
+          HTTP_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 https://mines-backend-mex2.onrender.com/health)
+          echo "Server responded with HTTP $HTTP_RESPONSE"
+          if [ "$HTTP_RESPONSE" -eq 200 ]; then
+            echo "Render server is active and warm!"
+          else
+            echo "Warning: Response code was $HTTP_RESPONSE"
+          fi
