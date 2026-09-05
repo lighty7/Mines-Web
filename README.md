@@ -71,7 +71,7 @@ Where:
 | **Audio** | Native Browser Web Audio API (`AudioContext`, `OscillatorNode`, `BiquadFilterNode`) |
 | **Icons** | [Lucide React](https://lucide.dev/) |
 | **API Client** | [Axios](https://axios-http.com/) with JWT interceptor and error parsing |
-| **CI / CD** | GitHub Actions (Automated verification, typecheck, build, and Pages deployment) |
+| **CI** | GitHub Actions (Automated TypeScript typechecking and Vite production build) |
 
 ---
 
@@ -128,8 +128,7 @@ Where:
 Mines-Web/
 ├── .github/
 │   ├── workflows/
-│   │   ├── ci.yml              # GitHub Actions build & verification pipeline
-│   │   └── deploy-pages.yml    # GitHub Pages automated deployment
+│   │   └── ci.yml              # GitHub Actions build & verification pipeline
 │   └── pull_request_template.md
 ├── public/
 │   └── favicon.svg             # Neon bomb favicon
