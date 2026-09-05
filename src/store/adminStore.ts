@@ -1,11 +1,12 @@
 import { create } from 'zustand'
-import { adminApi, AdminStats, AdminPlayer, AdminUser } from '../api/admin.api'
+import { adminApi, AdminStats, AdminDashboardData, AdminPlayer, AdminUser } from '../api/admin.api'
 import { getErrorMessage } from '../api/client'
 
 interface AdminState {
   adminToken: string | null
   adminUser: AdminUser | null
   stats: AdminStats | null
+  dashboard: AdminDashboardData | null
   users: AdminPlayer[]
   totalUsers: number
   currentPage: number
@@ -18,6 +19,7 @@ interface AdminState {
   login: (credentials: { key?: string; email?: string; password?: string }) => Promise<boolean>
   logout: () => void
   fetchStats: () => Promise<void>
+  fetchDashboard: () => Promise<void>
   fetchUsers: (page?: number) => Promise<void>
   setSearchTerm: (term: string) => void
   setStatusFilter: (status: 'ALL' | 'ACTIVE' | 'BANNED') => void
@@ -38,6 +40,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   adminToken: CACHED_TOKEN,
   adminUser: CACHED_ADMIN ? JSON.parse(CACHED_ADMIN) : null,
   stats: null,
+  dashboard: null,
   users: [],
   totalUsers: 0,
   currentPage: 1,
@@ -58,8 +61,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
         adminUser: data.admin,
         isLoading: false,
       })
-      await get().fetchStats()
-      await get().fetchUsers(1)
+      await Promise.all([get().fetchStats(), get().fetchDashboard(), get().fetchUsers(1)])
       return true
     } catch (err) {
       set({ isLoading: false, errorMessage: getErrorMessage(err) })
@@ -74,6 +76,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       adminToken: null,
       adminUser: null,
       stats: null,
+      dashboard: null,
       users: [],
     })
   },
@@ -82,6 +85,15 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     try {
       const stats = await adminApi.getStats()
       set({ stats })
+    } catch (err) {
+      set({ errorMessage: getErrorMessage(err) })
+    }
+  },
+
+  fetchDashboard: async () => {
+    try {
+      const dashboard = await adminApi.getDashboard()
+      set({ dashboard })
     } catch (err) {
       set({ errorMessage: getErrorMessage(err) })
     }

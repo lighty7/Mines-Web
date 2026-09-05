@@ -32,6 +32,70 @@ export interface AdminStats {
   }>
 }
 
+export interface AdminDashboardData {
+  overview: {
+    mainPot: number
+    totalWagered: number
+    totalPayout: number
+    houseProfit: number
+    todayWagered: number
+    todayProfit: number
+    realizedRtp: number
+    totalRounds: number
+    wonRounds: number
+    lostRounds: number
+    winRate: number
+    averageBet: number
+    activePlayersCount: number
+    totalUsersCount: number
+    bannedUsersCount: number
+    newUsersLast7Days: number
+  }
+  highestWin: {
+    amount: number
+    multiplier: number
+    username: string
+    createdAt: string
+  } | null
+  gridDistribution: {
+    '4x4': number
+    '5x5': number
+    '6x6': number
+  }
+  chart7Days: Array<{
+    date: string
+    wagered: number
+    payout: number
+    profit: number
+    rounds: number
+  }>
+  topWinners: Array<{
+    id: string
+    username: string
+    totalProfit: number
+    balance: number
+  }>
+  recentActivity: Array<{
+    id: string
+    type: string
+    username: string
+    amount: number
+    createdAt: string
+  }>
+  activeRounds: Array<{
+    id: string
+    userId: string
+    username: string
+    bet: number
+    mines: number
+    boardSize: number
+    revealedCount: number
+    multiplier: number
+    potentialWin: number
+    createdAt: string
+  }>
+}
+
 export interface AdminPlayer {
   id: string
   username: string
@@ -68,6 +132,13 @@ export const adminApi = {
 
   getStats: async (): Promise<AdminStats> => {
     const res = await api.get<AdminStats>('/api/admin/stats', {
+      headers: getAdminHeaders(),
+    })
+    return res.data
+  },
+
+  getDashboard: async (): Promise<AdminDashboardData> => {
+    const res = await api.get<AdminDashboardData>('/api/admin/dashboard', {
       headers: getAdminHeaders(),
     })
     return res.data
