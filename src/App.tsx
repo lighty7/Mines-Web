@@ -6,8 +6,11 @@ import { Footer } from './components/layout/Footer'
 import { AuthModal } from './components/auth/AuthModal'
 import { ProfileModal } from './components/profile/ProfileModal'
 import { HowToPlayModal } from './components/layout/HowToPlayModal'
+import { AdminDashboard } from './components/admin/AdminDashboard'
+import { AdminLoginModal } from './components/admin/AdminLoginModal'
 import { useAuthStore } from './store/authStore'
 import { useGameStore } from './store/gameStore'
+import { useAdminStore } from './store/adminStore'
 import { useAudio } from './hooks/useAudio'
 import confetti from 'canvas-confetti'
 import { Keyboard, AlertCircle } from 'lucide-react'
@@ -15,6 +18,7 @@ import { Keyboard, AlertCircle } from 'lucide-react'
 export const App: React.FC = () => {
   const { checkServer, refreshProfile, serverOnline } = useAuthStore()
   const { gameState, revealedCount, startGame, cashout, isLoading } = useGameStore()
+  const { adminToken } = useAdminStore()
   const { playClick, playCashout } = useAudio()
 
   // Modal visibility states
@@ -22,6 +26,12 @@ export const App: React.FC = () => {
   const [authInitialTab, setAuthInitialTab] = useState<'signin' | 'register'>('signin')
   const [profileModalOpen, setProfileModalOpen] = useState(false)
   const [howToPlayModalOpen, setHowToPlayModalOpen] = useState(false)
+
+  // Admin View State (triggered by #admin hash, footer button, or Ctrl+Shift+A)
+  const [isAdminView, setIsAdminView] = useState(() => {
+    return window.location.hash === '#admin' || window.location.pathname.startsWith('/admin')
+  })
+  const [adminLoginModalOpen, setAdminLoginModalOpen] = useState(false)
 
   // Server health polling and user profile refresh on mount
   useEffect(() => {
@@ -41,20 +51,38 @@ export const App: React.FC = () => {
     setAuthModalOpen(true)
   }, [])
 
-  // Keyboard shortcut listener for Spacebar (Start Game / Cashout) & Escape (Close modals)
+  // Admin Open Handler
+  const handleOpenAdmin = useCallback(() => {
+    if (adminToken) {
+      setIsAdminView(true)
+    } else {
+      setAdminLoginModalOpen(true)
+    }
+  }, [adminToken])
+
+  // Keyboard shortcut listener for Spacebar, Escape, and Ctrl+Shift+A (Admin)
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
+      // Admin Hotkey: Ctrl + Shift + A
+      if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+        e.preventDefault()
+        handleOpenAdmin()
+        return
+      }
+
       // If modal open, Escape closes modals
       if (e.key === 'Escape') {
-        if (authModalOpen || profileModalOpen || howToPlayModalOpen) {
+        if (authModalOpen || profileModalOpen || howToPlayModalOpen || adminLoginModalOpen) {
           setAuthModalOpen(false)
           setProfileModalOpen(false)
           setHowToPlayModalOpen(false)
+          setAdminLoginModalOpen(false)
           return
         }
       }
 
-      // Ignore when user is actively typing in form inputs
+      // Ignore when user is actively typing in form inputs or on admin dashboard
+      if (isAdminView) return
       const target = e.target as HTMLElement | null
       const tagName = target?.tagName?.toLowerCase()
       if (tagName === 'input' || tagName === 'textarea' || target?.isContentEditable) {
@@ -64,7 +92,7 @@ export const App: React.FC = () => {
       // Spacebar hotkey
       if (e.code === 'Space') {
         e.preventDefault()
-        if (isLoading || authModalOpen || profileModalOpen || howToPlayModalOpen) return
+        if (isLoading || authModalOpen || profileModalOpen || howToPlayModalOpen || adminLoginModalOpen) return
 
         if (gameState === 'ACTIVE') {
           if (revealedCount > 0) {
@@ -95,11 +123,28 @@ export const App: React.FC = () => {
     authModalOpen,
     profileModalOpen,
     howToPlayModalOpen,
+    adminLoginModalOpen,
+    isAdminView,
     cashout,
     startGame,
     playClick,
     playCashout,
+    handleOpenAdmin,
   ])
+
+  // If Admin View is active and authenticated, display Admin Dashboard
+  if (isAdminView && adminToken) {
+    return (
+      <AdminDashboard
+        onExit={() => {
+          setIsAdminView(false)
+          if (window.location.hash === '#admin') {
+            window.location.hash = ''
+          }
+        }}
+      />
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background text-text-primary flex flex-col selection:bg-primary/30 selection:text-primary">
@@ -151,7 +196,10 @@ export const App: React.FC = () => {
         </div>
 
         {/* Footer */}
-        <Footer onOpenHowToPlay={() => setHowToPlayModalOpen(true)} />
+        <Footer
+          onOpenHowToPlay={() => setHowToPlayModalOpen(true)}
+          onOpenAdmin={handleOpenAdmin}
+        />
       </main>
 
       {/* Modals */}
@@ -169,6 +217,16 @@ export const App: React.FC = () => {
       <HowToPlayModal
         isOpen={howToPlayModalOpen}
         onClose={() => setHowToPlayModalOpen(false)}
+      />
+
+      {/* Admin Gateway Login Modal */}
+      <AdminLoginModal
+        isOpen={adminLoginModalOpen}
+        onClose={() => setAdminLoginModalOpen(false)}
+        onSuccess={() => {
+          setAdminLoginModalOpen(false)
+          setIsAdminView(true)
+        }}
       />
     </div>
   )

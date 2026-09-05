@@ -3,9 +3,10 @@ import { HelpCircle, Shield, Globe } from 'lucide-react'
 
 interface FooterProps {
   onOpenHowToPlay: () => void
+  onOpenAdmin?: () => void
 }
 
-export const Footer: React.FC<FooterProps> = ({ onOpenHowToPlay }) => {
+export const Footer: React.FC<FooterProps> = ({ onOpenHowToPlay, onOpenAdmin }) => {
   return (
     <footer className="w-full border-t border-tile-border/40 py-6 px-4 lg:px-8 mt-12 bg-panel/30 text-xs text-text-secondary">
       <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -25,6 +26,20 @@ export const Footer: React.FC<FooterProps> = ({ onOpenHowToPlay }) => {
             <Shield className="w-3.5 h-3.5 text-accent-gold" />
             <span>99.0% RTP Fair Game</span>
           </div>
+
+          {onOpenAdmin && (
+            <>
+              <span className="text-tile-border hidden sm:inline">•</span>
+              <button
+                onClick={onOpenAdmin}
+                className="flex items-center gap-1.5 text-text-muted hover:text-accent-red transition-colors text-xs"
+                title="Admin Command Center"
+              >
+                <Shield className="w-3.5 h-3.5 text-accent-red/70" />
+                <span>Admin</span>
+              </button>
+            </>
+          )}
 
           <span className="text-tile-border hidden sm:inline">•</span>
 
