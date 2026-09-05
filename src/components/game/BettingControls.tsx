@@ -86,8 +86,8 @@ export const BettingControls: React.FC = () => {
           <Grid className="w-3.5 h-3.5 text-primary" />
           Grid Size
         </label>
-        <div className="grid grid-cols-4 gap-1.5 bg-tile p-1 rounded-xl border border-tile-border">
-          {[3, 5, 6, 8].map((dim) => (
+        <div className="grid grid-cols-3 gap-1.5 bg-tile p-1 rounded-xl border border-tile-border">
+          {[4, 5, 6].map((dim) => (
             <button
               key={dim}
               type="button"
@@ -171,34 +171,99 @@ export const BettingControls: React.FC = () => {
       </div>
 
       {/* Mines Selector */}
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <label className="text-xs font-semibold text-text-secondary flex items-center gap-1.5">
             <Bomb className="w-3.5 h-3.5 text-accent-red" />
             Mines Count
           </label>
-          <span className="text-xs font-mono font-bold text-accent-red">
-            {mines} / {boardSize} tiles
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="px-2 py-0.5 rounded-md bg-accent-red/15 border border-accent-red/30 text-accent-red font-mono font-bold text-xs">
+              {mines} {mines === 1 ? 'Mine' : 'Mines'}
+            </span>
+            <span className="text-[11px] text-text-secondary">
+              ({safeTilesRemaining} Safe)
+            </span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <input
-            type="range"
-            min="1"
-            max={maxMines}
-            step="1"
-            disabled={isActive || isLoading}
-            value={mines}
-            onChange={(e) => {
+        {/* Steppers and Range Slider */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            title="Decrease Mines"
+            disabled={isActive || isLoading || mines <= 1}
+            onClick={() => {
               playClick()
-              setMines(parseInt(e.target.value, 10))
+              setMines(mines - 1)
             }}
-            className="w-full h-2 bg-tile rounded-lg appearance-none cursor-pointer accent-primary disabled:opacity-50"
-          />
-          <span className="w-9 h-8 rounded-lg bg-tile border border-tile-border flex items-center justify-center font-mono font-bold text-xs text-text-primary flex-shrink-0">
+            className="w-8 h-8 rounded-lg bg-tile hover:bg-tile-hover border border-tile-border flex items-center justify-center font-bold text-base text-text-secondary hover:text-text-primary active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none flex-shrink-0"
+          >
+            -
+          </button>
+
+          <div className="flex-1 relative flex items-center">
+            <input
+              type="range"
+              min="1"
+              max={maxMines}
+              step="1"
+              disabled={isActive || isLoading}
+              value={mines}
+              style={{
+                background: `linear-gradient(to right, #18C964 0%, #F5C451 ${Math.min(
+                  ((mines - 1) / (maxMines - 1)) * 100,
+                  60
+                )}%, #F04444 ${((mines - 1) / (maxMines - 1)) * 100}%, #2A303C ${
+                  ((mines - 1) / (maxMines - 1)) * 100
+                }%, #2A303C 100%)`,
+              }}
+              onChange={(e) => {
+                playClick()
+                setMines(parseInt(e.target.value, 10))
+              }}
+              className="mines-slider"
+            />
+          </div>
+
+          <button
+            type="button"
+            title="Increase Mines"
+            disabled={isActive || isLoading || mines >= maxMines}
+            onClick={() => {
+              playClick()
+              setMines(mines + 1)
+            }}
+            className="w-8 h-8 rounded-lg bg-tile hover:bg-tile-hover border border-tile-border flex items-center justify-center font-bold text-base text-text-secondary hover:text-text-primary active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none flex-shrink-0"
+          >
+            +
+          </button>
+
+          <div className="w-10 h-8 rounded-lg bg-tile border border-primary/50 flex items-center justify-center font-mono font-bold text-xs text-primary flex-shrink-0 shadow-inner">
             {mines}
-          </span>
+          </div>
+        </div>
+
+        {/* Quick Mine Count Presets */}
+        <div className="grid grid-cols-5 gap-1.5 mt-0.5">
+          {[1, 3, 5, 10, maxMines].map((preset) => (
+            <button
+              key={preset}
+              type="button"
+              disabled={isActive || isLoading}
+              onClick={() => {
+                playClick()
+                setMines(preset)
+              }}
+              className={`py-1 text-[11px] font-mono font-bold rounded-lg border transition-all ${
+                mines === preset
+                  ? 'bg-accent-red/20 border-accent-red/60 text-accent-red shadow-sm'
+                  : 'bg-tile hover:bg-tile-hover border-tile-border text-text-secondary hover:text-text-primary disabled:opacity-50'
+              }`}
+            >
+              {preset === maxMines ? 'MAX' : `${preset}💣`}
+            </button>
+          ))}
         </div>
       </div>
 

@@ -54,56 +54,74 @@
   transform: rotateY(180deg);
 }
 
-/* Custom Range Input */
-input[type="range"] {
+/* High-Visibility Custom Range Input */
+input[type="range"].mines-slider {
   -webkit-appearance: none;
   appearance: none;
-  background: transparent;
+  width: 100%;
+  height: 12px;
+  border-radius: 9999px;
+  outline: none;
   cursor: pointer;
+  border: 1px solid #454E5E;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.7);
+  transition: opacity 0.2s ease;
 }
 
-input[type="range"]::-webkit-slider-track {
-  background: #191C22;
-  height: 8px;
-  border-radius: 4px;
+input[type="range"].mines-slider::-webkit-slider-runnable-track {
+  height: 12px;
+  border-radius: 9999px;
 }
 
-input[type="range"]::-moz-range-track {
-  background: #191C22;
-  height: 8px;
-  border-radius: 4px;
+input[type="range"].mines-slider::-moz-range-track {
+  height: 12px;
+  border-radius: 9999px;
+  border: 1px solid #454E5E;
 }
 
-input[type="range"]::-webkit-slider-thumb {
+input[type="range"].mines-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  height: 20px;
-  width: 20px;
+  height: 24px;
+  width: 24px;
   border-radius: 50%;
   background: #18C964;
-  cursor: pointer;
+  border: 3px solid #FFFFFF;
+  cursor: grab;
   margin-top: -6px;
-  box-shadow: 0 0 10px rgba(24, 201, 100, 0.5);
-  transition: transform 0.15s ease, background-color 0.15s ease;
+  box-shadow: 0 0 14px rgba(24, 201, 100, 0.9), 0 3px 6px rgba(0, 0, 0, 0.8);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
-input[type="range"]::-webkit-slider-thumb:hover {
-  transform: scale(1.15);
+input[type="range"].mines-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
   background: #20E875;
+  box-shadow: 0 0 18px rgba(24, 201, 100, 1), 0 3px 8px rgba(0, 0, 0, 0.9);
 }
 
-input[type="range"]::-moz-range-thumb {
-  height: 20px;
-  width: 20px;
+input[type="range"].mines-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.1);
+}
+
+input[type="range"].mines-slider::-moz-range-thumb {
+  height: 24px;
+  width: 24px;
   border-radius: 50%;
   background: #18C964;
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 0 10px rgba(24, 201, 100, 0.5);
-  transition: transform 0.15s ease, background-color 0.15s ease;
+  border: 3px solid #FFFFFF;
+  cursor: grab;
+  box-shadow: 0 0 14px rgba(24, 201, 100, 0.9), 0 3px 6px rgba(0, 0, 0, 0.8);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
-input[type="range"]::-moz-range-thumb:hover {
-  transform: scale(1.15);
+input[type="range"].mines-slider::-moz-range-thumb:hover {
+  transform: scale(1.2);
   background: #20E875;
+  box-shadow: 0 0 18px rgba(24, 201, 100, 1), 0 3px 8px rgba(0, 0, 0, 0.9);
+}
+
+input[type="range"].mines-slider::-moz-range-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.1);
 }

@@ -7,14 +7,14 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![RTP](https://img.shields.io/badge/RTP-99.0%25-18C964)](https://github.com/lighty7/Mines-Web)
 
-A modern, high-performance, casino-grade **Mines** web application inspired by Stake and Roobet. Features tactile 3D tile flips, zero-latency synthesized Web Audio, responsive multi-grid scaling (3×3 to 8×8), fair odds calculation (99% RTP), dual-mode gameplay (Guest and Authenticated), and seamless integration with the live PostgreSQL backend.
+A modern, high-performance, casino-grade **Mines** web application inspired by Stake and Roobet. Features tactile 3D tile flips, zero-latency synthesized Web Audio, responsive multi-grid scaling (4×4 to 6×6), fair odds calculation (99% RTP), dual-mode gameplay (Guest and Authenticated), and seamless integration with the live PostgreSQL backend.
 
 ---
 
 ## ✨ Features
 
 - **🎮 Dynamic Multi-Grid Engine**:
-  - Support for **3×3 (9 tiles)**, **5×5 (25 tiles)**, **6×6 (36 tiles)**, and **8×8 (64 tiles)** grids.
+  - Support for **4×4 (16 tiles)**, **5×5 (25 tiles)**, and **6×6 (36 tiles)** grids matching the Android app and backend engine.
   - Granular mine configuration (from 1 mine up to $N-1$ mines).
   - Real-time mathematical odds calculation and live safe/mine chance percentage display.
 

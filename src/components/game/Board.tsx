@@ -42,11 +42,10 @@ export const Board: React.FC = () => {
 
   // Dynamic Tailwind grid column class
   const gridColClass = {
-    3: 'grid-cols-3 max-w-sm',
+    4: 'grid-cols-4 max-w-sm sm:max-w-md',
     5: 'grid-cols-5 max-w-md sm:max-w-lg',
     6: 'grid-cols-6 max-w-lg sm:max-w-xl',
-    8: 'grid-cols-8 max-w-xl sm:max-w-2xl',
-  }[gridDimension] || 'grid-cols-5 max-w-lg'
+  }[gridDimension] || 'grid-cols-5 max-w-md sm:max-w-lg'
 
   return (
     <div className="flex flex-col items-center justify-center w-full relative">

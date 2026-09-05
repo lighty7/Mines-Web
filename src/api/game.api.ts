@@ -2,7 +2,7 @@ import { api } from './client'
 import { StartRoundResponse, RevealResponse, CashoutResponse } from '../types'
 
 export const gameApi = {
-  startGame: async (bet: number, mines: number, boardSize: number = 25) => {
+  startGame: async (bet: number, mines: number, boardSize: number = 5) => {
     const res = await api.post<StartRoundResponse>('/api/game/start', {
       bet,
       mines,

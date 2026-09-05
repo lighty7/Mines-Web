@@ -76,7 +76,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
 
   setGridDimension: (dim: number) => {
     if (get().gameState === 'ACTIVE' || get().isLoading) return
-    const validDims = [3, 5, 6, 8]
+    const validDims = [4, 5, 6]
     if (!validDims.includes(dim)) return
     const boardSize = dim * dim
     const maxMines = boardSize - 1
@@ -91,7 +91,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
   clearError: () => set({ errorMessage: null }),
 
   startGame: async () => {
-    const { bet, mines, boardSize, gameState, isLoading } = get()
+    const { bet, mines, boardSize, gridDimension, gameState, isLoading } = get()
     if (gameState === 'ACTIVE' || isLoading) return false
 
     const auth = useAuthStore.getState()
@@ -102,10 +102,10 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
 
     set({ isLoading: true, errorMessage: null, lastResult: null })
 
-    // If Authenticated: Call live server API
+    // If Authenticated: Call live server API with dimension (4, 5, or 6)
     if (!auth.user.isGuest) {
       try {
-        const response = await gameApi.startGame(bet, mines, boardSize)
+        const response = await gameApi.startGame(bet, mines, gridDimension)
         auth.updateBalance(response.balance)
         set({
           activeRoundId: response.roundId,
