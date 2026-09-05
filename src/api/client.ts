@@ -1,6 +1,15 @@
 import axios, { AxiosError } from 'axios'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://mines-backend-mex2.onrender.com'
+function normalizeBaseUrl(raw?: string): string {
+  let url = (raw || 'https://mines-backend-mex2.onrender.com').trim()
+  url = url.replace(/\/+$/, '')
+  if (url.endsWith('/api')) {
+    url = url.slice(0, -4)
+  }
+  return url.replace(/\/+$/, '')
+}
+
+const API_BASE_URL = normalizeBaseUrl(import.meta.env.VITE_API_URL)
 
 export const api = axios.create({
   baseURL: API_BASE_URL,

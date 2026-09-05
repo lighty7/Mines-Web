@@ -3,8 +3,13 @@ import { AuthResponse } from '../types'
 
 export const authApi = {
   checkHealth: async () => {
-    const res = await api.get<{ status: string }>('/health')
-    return res.data
+    try {
+      const res = await api.get<{ status: string }>('/health')
+      return res.data
+    } catch {
+      const res = await api.get<{ status: string }>('/api/health')
+      return res.data
+    }
   },
 
   login: async (email: string, password: string) => {
