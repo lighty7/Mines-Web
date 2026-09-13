@@ -1,5 +1,12 @@
 import { create } from 'zustand'
-import { adminApi, AdminStats, AdminDashboardData, AdminPlayer, AdminUser } from '../api/admin.api'
+import {
+  adminApi,
+  AdminStats,
+  AdminDashboardData,
+  AdminPlayer,
+  AdminUser,
+  UnifiedActiveRound,
+} from '../api/admin.api'
 import { getErrorMessage } from '../api/client'
 
 interface AdminState {
@@ -16,11 +23,25 @@ interface AdminState {
   isLoading: boolean
   errorMessage: string | null
 
+  // Active Rounds management
+  activeRounds: UnifiedActiveRound[]
+  activeRoundsFilter: 'ALL' | 'mines' | 'coinflip' | 'blackjack'
+  isStoppingRound: boolean
+
   login: (credentials: { key?: string; email?: string; password?: string }) => Promise<boolean>
   logout: () => void
   fetchStats: () => Promise<void>
   fetchDashboard: () => Promise<void>
   fetchUsers: (page?: number) => Promise<void>
+  fetchActiveRounds: (gameType?: string) => Promise<void>
+  setActiveRoundsFilter: (filter: 'ALL' | 'mines' | 'coinflip' | 'blackjack') => void
+  stopRound: (
+    gameType: string,
+    roundId: string,
+    action?: 'REFUND' | 'CASHOUT',
+    reason?: string
+  ) => Promise<boolean>
+  stopAllRounds: (gameType?: string, reason?: string) => Promise<boolean>
   setSearchTerm: (term: string) => void
   setStatusFilter: (status: 'ALL' | 'ACTIVE' | 'BANNED') => void
   toggleBan: (userId: string, isBanned: boolean, reason?: string) => Promise<boolean>
@@ -50,6 +71,10 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   isLoading: false,
   errorMessage: null,
 
+  activeRounds: [],
+  activeRoundsFilter: 'ALL',
+  isStoppingRound: false,
+
   login: async (credentials) => {
     set({ isLoading: true, errorMessage: null })
     try {
@@ -61,7 +86,12 @@ export const useAdminStore = create<AdminState>((set, get) => ({
         adminUser: data.admin,
         isLoading: false,
       })
-      await Promise.all([get().fetchStats(), get().fetchDashboard(), get().fetchUsers(1)])
+      await Promise.all([
+        get().fetchStats(),
+        get().fetchDashboard(),
+        get().fetchUsers(1),
+        get().fetchActiveRounds(),
+      ])
       return true
     } catch (err) {
       set({ isLoading: false, errorMessage: getErrorMessage(err) })
@@ -78,13 +108,14 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       stats: null,
       dashboard: null,
       users: [],
+      activeRounds: [],
     })
   },
 
   fetchStats: async () => {
     try {
       const stats = await adminApi.getStats()
-      set({ stats })
+      set({ stats, activeRounds: stats.activeRounds || [] })
     } catch (err) {
       set({ errorMessage: getErrorMessage(err) })
     }
@@ -96,6 +127,56 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       set({ dashboard })
     } catch (err) {
       set({ errorMessage: getErrorMessage(err) })
+    }
+  },
+
+  fetchActiveRounds: async (gameType?: string) => {
+    try {
+      const filter = gameType || get().activeRoundsFilter
+      const res = await adminApi.getActiveRounds(filter)
+      set({ activeRounds: res.rounds })
+    } catch (err) {
+      set({ errorMessage: getErrorMessage(err) })
+    }
+  },
+
+  setActiveRoundsFilter: (filter) => {
+    set({ activeRoundsFilter: filter })
+    get().fetchActiveRounds(filter)
+  },
+
+  stopRound: async (gameType, roundId, action = 'REFUND', reason) => {
+    set({ isStoppingRound: true, errorMessage: null })
+    try {
+      await adminApi.stopRound(gameType, roundId, action, reason)
+      // Remove round from active list optimistically
+      set((state) => ({
+        activeRounds: state.activeRounds.filter((r) => r.id !== roundId),
+        isStoppingRound: false,
+      }))
+      await Promise.all([get().fetchStats(), get().fetchDashboard()])
+      return true
+    } catch (err) {
+      set({ isStoppingRound: false, errorMessage: getErrorMessage(err) })
+      return false
+    }
+  },
+
+  stopAllRounds: async (gameType = 'ALL', reason) => {
+    set({ isStoppingRound: true, errorMessage: null })
+    try {
+      await adminApi.stopAllRounds(gameType, reason)
+      // Refresh all metrics
+      await Promise.all([
+        get().fetchActiveRounds(get().activeRoundsFilter),
+        get().fetchStats(),
+        get().fetchDashboard(),
+      ])
+      set({ isStoppingRound: false })
+      return true
+    } catch (err) {
+      set({ isStoppingRound: false, errorMessage: getErrorMessage(err) })
+      return false
     }
   },
 

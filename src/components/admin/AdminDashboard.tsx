@@ -14,7 +14,6 @@ import {
   RefreshCw,
   LogOut,
   ArrowLeft,
-  Bomb,
   Server,
   AlertTriangle,
   Loader2,
@@ -25,10 +24,13 @@ import {
   History,
   Sparkles,
   Layers,
+  StopCircle,
+  DollarSign,
+  Clock,
 } from 'lucide-react'
 import { useAdminStore } from '../../store/adminStore'
 import { useAudio } from '../../hooks/useAudio'
-import { AdminPlayer } from '../../api/admin.api'
+import { AdminPlayer, UnifiedActiveRound } from '../../api/admin.api'
 
 interface AdminDashboardProps {
   onExit: () => void
@@ -47,9 +49,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExit }) => {
     statusFilter,
     isLoading,
     errorMessage,
+    activeRounds,
+    activeRoundsFilter,
+    isStoppingRound,
     fetchStats,
     fetchDashboard,
     fetchUsers,
+    fetchActiveRounds,
+    setActiveRoundsFilter,
+    stopRound,
+    stopAllRounds,
     setSearchTerm,
     setStatusFilter,
     toggleBan,
@@ -74,11 +83,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExit }) => {
   const [userToDelete, setUserToDelete] = useState<AdminPlayer | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
+  // Active Rounds management state
+  const [selectedRoundForStop, setSelectedRoundForStop] = useState<UnifiedActiveRound | null>(null)
+  const [stopActionType, setStopActionType] = useState<'REFUND' | 'CASHOUT'>('REFUND')
+  const [stopReason, setStopReason] = useState<string>('Terminated by administrator')
+  const [isConfirmingStopAll, setIsConfirmingStopAll] = useState<boolean>(false)
+  const [stopAllReason, setStopAllReason] = useState<string>('Emergency platform maintenance')
+  const [autoRefreshSecs, setAutoRefreshSecs] = useState<number>(5)
+  const [actionSuccessMessage, setActionSuccessMessage] = useState<string | null>(null)
+
   // Initial load and periodic stats poll
   useEffect(() => {
     fetchStats()
     fetchDashboard()
     fetchUsers(1)
+    fetchActiveRounds()
 
     const interval = setInterval(() => {
       fetchStats()
@@ -86,13 +105,56 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExit }) => {
     }, 15000)
 
     return () => clearInterval(interval)
-  }, [fetchStats, fetchDashboard, fetchUsers])
+  }, [fetchStats, fetchDashboard, fetchUsers, fetchActiveRounds])
+
+  // Live rounds dedicated auto-refresh timer
+  useEffect(() => {
+    if (activeTab === 'live') {
+      fetchActiveRounds()
+      if (autoRefreshSecs > 0) {
+        const interval = setInterval(() => {
+          fetchActiveRounds()
+        }, autoRefreshSecs * 1000)
+        return () => clearInterval(interval)
+      }
+    }
+  }, [activeTab, autoRefreshSecs, fetchActiveRounds])
 
   const handleManualRefresh = async () => {
     playClick()
     setIsRefreshing(true)
-    await Promise.all([fetchStats(), fetchDashboard(), fetchUsers(currentPage)])
+    await Promise.all([fetchStats(), fetchDashboard(), fetchUsers(currentPage), fetchActiveRounds()])
     setTimeout(() => setIsRefreshing(false), 600)
+  }
+
+  const handleExecuteStopRound = async () => {
+    if (!selectedRoundForStop) return
+    playClick()
+    const ok = await stopRound(
+      selectedRoundForStop.gameType,
+      selectedRoundForStop.id,
+      stopActionType,
+      stopReason
+    )
+    if (ok) {
+      setActionSuccessMessage(
+        `Round ${selectedRoundForStop.id.slice(-6)} (${selectedRoundForStop.gameType}) successfully ${
+          stopActionType === 'REFUND' ? 'refunded' : 'cashed out'
+        } for player ${selectedRoundForStop.username}`
+      )
+      setTimeout(() => setActionSuccessMessage(null), 4000)
+    }
+    setSelectedRoundForStop(null)
+  }
+
+  const handleExecuteStopAll = async () => {
+    playClick()
+    const ok = await stopAllRounds(activeRoundsFilter, stopAllReason)
+    if (ok) {
+      setActionSuccessMessage('Emergency Stop executed: all matching active rounds stopped and refunded.')
+      setTimeout(() => setActionSuccessMessage(null), 4000)
+    }
+    setIsConfirmingStopAll(false)
   }
 
   const handleBanToggle = async (user: AdminPlayer) => {
@@ -658,67 +720,282 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExit }) => {
           </div>
         )}
 
-        {/* TAB 2: LIVE ACTIVE ROUNDS STREAM */}
+        {/* TAB 2: LIVE ACTIVE ROUNDS STREAM & CONTROLS */}
         {activeTab === 'live' && (
           <div className="flex flex-col gap-6">
-            <div className="p-5 rounded-2xl bg-panel border border-tile-border shadow-xl flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-text-primary flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                  Live Active Rounds (Real-time Stream)
-                </h3>
-                <span className="text-xs text-text-secondary font-mono">
-                  {stats?.activeRounds?.length ?? 0} Active Sessions
-                </span>
+            {actionSuccessMessage && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-3 bg-emerald-500/15 border border-emerald-500/40 rounded-xl text-emerald-400 text-xs flex items-center justify-between"
+              >
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-400" />
+                  <span>{actionSuccessMessage}</span>
+                </div>
+                <button
+                  onClick={() => setActionSuccessMessage(null)}
+                  className="text-text-muted hover:text-white"
+                >
+                  ✕
+                </button>
+              </motion.div>
+            )}
+
+            {/* Metrics and Emergency Actions Toolbar */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Stat 1: Total Active Sessions */}
+              <div className="p-4 rounded-2xl bg-panel border border-tile-border flex items-center justify-between shadow-md">
+                <div>
+                  <span className="text-xs text-text-secondary font-semibold block">Active Sessions</span>
+                  <span className="text-xl font-black text-white font-mono mt-0.5 block">
+                    {activeRounds.length}
+                  </span>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+                  <Activity className="w-5 h-5 animate-pulse" />
+                </div>
               </div>
 
-              {stats?.activeRounds && stats.activeRounds.length > 0 ? (
+              {/* Stat 2: Active Stakes at Risk */}
+              <div className="p-4 rounded-2xl bg-panel border border-tile-border flex items-center justify-between shadow-md">
+                <div>
+                  <span className="text-xs text-text-secondary font-semibold block">Live Stakes at Risk</span>
+                  <span className="text-xl font-black text-accent-gold font-mono mt-0.5 block">
+                    ${activeRounds.reduce((acc, r) => acc + (r.bet || 0), 0).toFixed(2)}
+                  </span>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                  <Coins className="w-5 h-5" />
+                </div>
+              </div>
+
+              {/* Stat 3: Max Potential Exposure */}
+              <div className="p-4 rounded-2xl bg-panel border border-tile-border flex items-center justify-between shadow-md">
+                <div>
+                  <span className="text-xs text-text-secondary font-semibold block">Potential Exposure</span>
+                  <span className="text-xl font-black text-emerald-400 font-mono mt-0.5 block">
+                    ${activeRounds.reduce((acc, r) => acc + (r.potentialWin || 0), 0).toFixed(2)}
+                  </span>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                  <TrendingUp className="w-5 h-5" />
+                </div>
+              </div>
+
+              {/* Emergency Stop All Action */}
+              <div className="p-4 rounded-2xl bg-accent-red/10 border border-accent-red/40 flex flex-col justify-between gap-2 shadow-md">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-accent-red font-bold uppercase tracking-wider flex items-center gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5 text-accent-red" />
+                    Panic Switch
+                  </span>
+                  <span className="text-[10px] text-text-muted font-mono">{activeRounds.length} live</span>
+                </div>
+                <button
+                  onClick={() => {
+                    playClick()
+                    setIsConfirmingStopAll(true)
+                  }}
+                  disabled={activeRounds.length === 0 || isStoppingRound}
+                  className="w-full py-2 px-3 rounded-xl bg-accent-red hover:bg-accent-red/90 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-lg shadow-accent-red/20 cursor-pointer transition-all"
+                >
+                  <StopCircle className="w-4 h-4" />
+                  <span>Stop All Live Rounds</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Filter & Stream Controls Container */}
+            <div className="p-5 rounded-2xl bg-panel border border-tile-border shadow-xl flex flex-col gap-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-tile-border/60 pb-3">
+                {/* Game filter tabs */}
+                <div className="flex items-center gap-1.5 bg-tile p-1 rounded-xl border border-tile-border text-xs font-semibold">
+                  {[
+                    { id: 'ALL', label: 'All Games' },
+                    { id: 'mines', label: '💣 Mines' },
+                    { id: 'coinflip', label: '🪙 Coin Flip' },
+                    { id: 'blackjack', label: '🃏 Blackjack' },
+                  ].map((filter) => (
+                    <button
+                      key={filter.id}
+                      onClick={() => {
+                        playClick()
+                        setActiveRoundsFilter(filter.id as any)
+                      }}
+                      className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                        activeRoundsFilter === filter.id
+                          ? 'bg-primary text-black font-bold shadow'
+                          : 'text-text-secondary hover:text-text-primary'
+                      }`}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Auto-Refresh Timer Selector */}
+                <div className="flex items-center gap-2 text-xs">
+                  <Clock className="w-3.5 h-3.5 text-text-secondary" />
+                  <span className="text-text-secondary font-semibold">Auto-Refresh:</span>
+                  <div className="flex items-center gap-1 bg-tile p-1 rounded-lg border border-tile-border font-mono text-[11px]">
+                    {[
+                      { s: 3, l: '3s' },
+                      { s: 5, l: '5s' },
+                      { s: 10, l: '10s' },
+                      { s: 0, l: 'Off' },
+                    ].map((rate) => (
+                      <button
+                        key={rate.l}
+                        onClick={() => {
+                          playClick()
+                          setAutoRefreshSecs(rate.s)
+                        }}
+                        className={`px-2 py-0.5 rounded transition-all cursor-pointer ${
+                          autoRefreshSecs === rate.s
+                            ? 'bg-tile-border text-white font-bold'
+                            : 'text-text-secondary hover:text-text-primary'
+                        }`}
+                      >
+                        {rate.l}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      playClick()
+                      fetchActiveRounds()
+                    }}
+                    title="Refresh Now"
+                    className="p-1.5 rounded-lg bg-tile border border-tile-border text-text-secondary hover:text-white hover:bg-tile-hover ml-1 cursor-pointer"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Live Rounds Table */}
+              {activeRounds && activeRounds.length > 0 ? (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
                       <tr className="border-b border-tile-border text-text-secondary font-semibold">
+                        <th className="py-2.5 px-3">Game</th>
                         <th className="py-2.5 px-3">Player</th>
-                        <th className="py-2.5 px-3">Bet</th>
-                        <th className="py-2.5 px-3">Grid & Mines</th>
-                        <th className="py-2.5 px-3">Revealed Gems</th>
-                        <th className="py-2.5 px-3">Current Multiplier</th>
-                        <th className="py-2.5 px-3">Potential Payout</th>
-                        <th className="py-2.5 px-3 text-right">Started At</th>
+                        <th className="py-2.5 px-3">Wager</th>
+                        <th className="py-2.5 px-3">Live State / Hand</th>
+                        <th className="py-2.5 px-3">Multiplier</th>
+                        <th className="py-2.5 px-3">Potential Win</th>
+                        <th className="py-2.5 px-3">Elapsed</th>
+                        <th className="py-2.5 px-3 text-right">Intervention</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-tile-border/50">
-                      {stats.activeRounds.map((round) => (
-                        <tr key={round.id} className="hover:bg-tile/50 transition-colors font-mono">
-                          <td className="py-3 px-3 font-sans font-bold text-text-primary">
-                            {round.username}
-                          </td>
-                          <td className="py-3 px-3 font-bold text-accent-gold">
-                            {round.bet.toFixed(2)}
-                          </td>
-                          <td className="py-3 px-3 text-text-secondary">
-                            {round.boardSize}x{round.boardSize} ({round.mines} 💣)
-                          </td>
-                          <td className="py-3 px-3 font-bold text-primary">
-                            {round.revealedCount} 💎
-                          </td>
-                          <td className="py-3 px-3 text-primary font-bold">
-                            {round.multiplier.toFixed(2)}x
-                          </td>
-                          <td className="py-3 px-3 font-bold text-emerald-400">
-                            {round.potentialWin.toFixed(2)} mineCoin
-                          </td>
-                          <td className="py-3 px-3 text-right text-text-muted text-[11px]">
-                            {new Date(round.createdAt).toLocaleTimeString()}
-                          </td>
-                        </tr>
-                      ))}
+                    <tbody className="divide-y divide-tile-border/50 font-mono">
+                      {activeRounds.map((round) => {
+                        const gameIcon =
+                          round.gameType === 'coinflip' ? '🪙' : round.gameType === 'blackjack' ? '🃏' : '💣'
+                        const gameBadgeColor =
+                          round.gameType === 'coinflip'
+                            ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                            : round.gameType === 'blackjack'
+                            ? 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30'
+                            : 'bg-red-500/15 text-red-400 border-red-500/30'
+
+                        const canForceCashout =
+                          (round.gameType === 'mines' && (round.revealedCount || 0) > 0) ||
+                          (round.gameType === 'coinflip' && (round.streak || 0) > 0)
+
+                        return (
+                          <tr key={`${round.gameType}-${round.id}`} className="hover:bg-tile/50 transition-colors">
+                            <td className="py-3 px-3">
+                              <span
+                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold border uppercase ${gameBadgeColor}`}
+                              >
+                                <span>{gameIcon}</span>
+                                <span>{round.gameType}</span>
+                              </span>
+                            </td>
+
+                            <td className="py-3 px-3 font-sans">
+                              <div className="font-bold text-text-primary">{round.username}</div>
+                              <div className="text-[10px] text-text-muted truncate max-w-[140px]">
+                                {round.email}
+                              </div>
+                            </td>
+
+                            <td className="py-3 px-3 font-bold text-accent-gold">
+                              ${round.bet.toFixed(2)}
+                            </td>
+
+                            <td className="py-3 px-3 font-sans text-xs text-text-secondary">
+                              <span className="bg-tile/80 px-2 py-1 rounded-md border border-tile-border/60">
+                                {round.stateSummary}
+                              </span>
+                            </td>
+
+                            <td className="py-3 px-3 font-bold text-primary">
+                              {round.multiplier.toFixed(2)}x
+                            </td>
+
+                            <td className="py-3 px-3 font-bold text-emerald-400">
+                              ${round.potentialWin.toFixed(2)}
+                            </td>
+
+                            <td className="py-3 px-3 text-text-muted text-[11px]">
+                              {new Date(round.createdAt).toLocaleTimeString()}
+                            </td>
+
+                            <td className="py-3 px-3 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                {canForceCashout && (
+                                  <button
+                                    onClick={() => {
+                                      playClick()
+                                      setSelectedRoundForStop(round)
+                                      setStopActionType('CASHOUT')
+                                      setStopReason('Admin force cashout at current progress')
+                                    }}
+                                    className="px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-400 text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer"
+                                    title="Force Cashout at Current Value"
+                                  >
+                                    <DollarSign className="w-3 h-3" />
+                                    <span>Cashout</span>
+                                  </button>
+                                )}
+
+                                <button
+                                  onClick={() => {
+                                    playClick()
+                                    setSelectedRoundForStop(round)
+                                    setStopActionType('REFUND')
+                                    setStopReason('Round terminated & refunded by admin')
+                                  }}
+                                  className="px-2.5 py-1 rounded-lg bg-accent-red/15 border border-accent-red/40 hover:bg-accent-red/30 text-accent-red text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer"
+                                  title="Stop and Refund Wager"
+                                >
+                                  <Ban className="w-3 h-3" />
+                                  <span>Stop & Refund</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })}
                     </tbody>
                   </table>
                 </div>
               ) : (
-                <div className="py-12 flex flex-col items-center justify-center text-center text-text-muted gap-2">
-                  <Bomb className="w-8 h-8 opacity-40" />
-                  <p className="text-xs">No active rounds playing at this exact second.</p>
+                <div className="py-14 flex flex-col items-center justify-center text-center text-text-muted gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-tile border border-tile-border flex items-center justify-center text-xl">
+                    🎲
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-text-primary">No Live Active Rounds In-Flight</p>
+                    <p className="text-[11px] text-text-secondary mt-0.5">
+                      When players wager on Mines, Coin Flip, or Blackjack, real-time sessions stream here.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
@@ -1104,6 +1381,194 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExit }) => {
                 >
                   {isDeleting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   Delete Permanently
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* STOP SINGLE ROUND CONFIRMATION MODAL */}
+      <AnimatePresence>
+        {selectedRoundForStop && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md bg-panel border-2 border-accent-red/50 rounded-2xl p-5 shadow-2xl flex flex-col gap-4 text-xs"
+            >
+              <div className="flex items-center gap-2.5 text-accent-red">
+                <StopCircle className="w-6 h-6 flex-shrink-0" />
+                <div>
+                  <h3 className="text-sm font-bold text-white">Intervene in Live Active Round</h3>
+                  <span className="text-[10px] text-text-secondary font-mono">
+                    ID: {selectedRoundForStop.id} · {selectedRoundForStop.gameType.toUpperCase()}
+                  </span>
+                </div>
+              </div>
+
+              {/* Round Details Card */}
+              <div className="p-3 rounded-xl bg-tile/70 border border-tile-border flex flex-col gap-2 font-mono">
+                <div className="flex items-center justify-between">
+                  <span className="text-text-secondary font-sans">Player:</span>
+                  <span className="text-white font-bold">{selectedRoundForStop.username}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-text-secondary font-sans">Wager Placed:</span>
+                  <span className="text-accent-gold font-bold">${selectedRoundForStop.bet.toFixed(2)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-text-secondary font-sans">Current Progress:</span>
+                  <span className="text-text-primary">{selectedRoundForStop.stateSummary}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-text-secondary font-sans">Current Multiplier:</span>
+                  <span className="text-primary font-bold">{selectedRoundForStop.multiplier.toFixed(2)}x</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-text-secondary font-sans">Accumulated Win:</span>
+                  <span className="text-emerald-400 font-bold">${selectedRoundForStop.potentialWin.toFixed(2)}</span>
+                </div>
+              </div>
+
+              {/* Action Selection */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-text-secondary font-semibold">Resolution Action</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setStopActionType('REFUND')}
+                    className={`p-2.5 rounded-xl border text-left flex flex-col gap-0.5 transition-all cursor-pointer ${
+                      stopActionType === 'REFUND'
+                        ? 'bg-accent-red/20 border-accent-red text-white'
+                        : 'bg-tile border-tile-border text-text-secondary hover:text-white'
+                    }`}
+                  >
+                    <span className="font-bold text-xs">Refund Bet</span>
+                    <span className="text-[10px] opacity-80">
+                      Returns ${selectedRoundForStop.bet.toFixed(2)}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={selectedRoundForStop.gameType === 'blackjack' || selectedRoundForStop.multiplier <= 1}
+                    onClick={() => setStopActionType('CASHOUT')}
+                    className={`p-2.5 rounded-xl border text-left flex flex-col gap-0.5 transition-all cursor-pointer ${
+                      stopActionType === 'CASHOUT'
+                        ? 'bg-emerald-500/20 border-emerald-500 text-white'
+                        : 'bg-tile border-tile-border text-text-secondary hover:text-white disabled:opacity-40 disabled:cursor-not-allowed'
+                    }`}
+                  >
+                    <span className="font-bold text-xs">Force Cashout</span>
+                    <span className="text-[10px] opacity-80">
+                      Pays ${selectedRoundForStop.potentialWin.toFixed(2)}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Reason Input */}
+              <div className="flex flex-col gap-1">
+                <label className="text-text-secondary font-semibold">Audit / Customer Reason</label>
+                <input
+                  type="text"
+                  value={stopReason}
+                  onChange={(e) => setStopReason(e.target.value)}
+                  className="w-full bg-tile border border-tile-border rounded-xl px-3.5 py-2 text-xs text-text-primary focus:outline-none focus:border-accent-red"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedRoundForStop(null)}
+                  className="px-3 py-2 rounded-xl bg-tile border border-tile-border text-text-secondary hover:text-text-primary cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={isStoppingRound}
+                  onClick={handleExecuteStopRound}
+                  className={`px-4 py-2 rounded-xl text-white font-bold shadow-md flex items-center gap-1.5 cursor-pointer ${
+                    stopActionType === 'REFUND' ? 'bg-accent-red shadow-accent-red/20' : 'bg-emerald-600 shadow-emerald-600/20'
+                  }`}
+                >
+                  {isStoppingRound && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>{stopActionType === 'REFUND' ? 'Confirm Stop & Refund' : 'Confirm Force Cashout'}</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* EMERGENCY STOP ALL CONFIRMATION MODAL */}
+      <AnimatePresence>
+        {isConfirmingStopAll && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md bg-panel border-2 border-accent-red rounded-2xl p-5 shadow-2xl flex flex-col gap-4 text-xs"
+            >
+              <div className="flex items-center gap-2.5 text-accent-red">
+                <AlertTriangle className="w-7 h-7 flex-shrink-0 animate-bounce" />
+                <div>
+                  <h3 className="text-base font-black text-accent-red uppercase tracking-wider">
+                    Emergency Panic Switch: Stop All Rounds
+                  </h3>
+                  <span className="text-[11px] text-text-secondary">
+                    Target scope: {activeRoundsFilter === 'ALL' ? 'All Games' : activeRoundsFilter.toUpperCase()}
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-3 bg-accent-red/15 border border-accent-red/40 rounded-xl text-accent-red text-xs leading-relaxed">
+                <strong>CRITICAL ACTION:</strong> This will immediately cancel all in-flight wagers for the selected game(s), abort active client connections, and atomically refund all players&apos; initial bets back to their balance.
+              </div>
+
+              <div className="p-3 rounded-xl bg-tile border border-tile-border flex items-center justify-between font-mono">
+                <span className="text-text-secondary font-sans">Active Rounds to Cancel:</span>
+                <span className="text-white font-bold text-sm">{activeRounds.length} rounds</span>
+              </div>
+
+              <div className="p-3 rounded-xl bg-tile border border-tile-border flex items-center justify-between font-mono">
+                <span className="text-text-secondary font-sans">Total Refund Amount:</span>
+                <span className="text-accent-gold font-bold text-sm">
+                  ${activeRounds.reduce((acc, r) => acc + (r.bet || 0), 0).toFixed(2)}
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-text-secondary font-semibold">Incident / Audit Log Reason</label>
+                <input
+                  type="text"
+                  value={stopAllReason}
+                  onChange={(e) => setStopAllReason(e.target.value)}
+                  className="w-full bg-tile border border-tile-border rounded-xl px-3.5 py-2 text-xs text-text-primary focus:outline-none focus:border-accent-red"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsConfirmingStopAll(false)}
+                  className="px-3 py-2 rounded-xl bg-tile border border-tile-border text-text-secondary hover:text-text-primary cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={isStoppingRound}
+                  onClick={handleExecuteStopAll}
+                  className="px-4 py-2.5 rounded-xl bg-accent-red hover:bg-accent-red/90 text-white font-black uppercase tracking-wider shadow-lg shadow-accent-red/30 flex items-center gap-1.5 cursor-pointer"
+                >
+                  {isStoppingRound && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>EXECUTE EMERGENCY STOP</span>
                 </button>
               </div>
             </motion.div>

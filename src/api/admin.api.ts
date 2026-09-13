@@ -7,6 +7,27 @@ export interface AdminUser {
   role: string
 }
 
+export type AdminGameType = 'mines' | 'coinflip' | 'blackjack'
+
+export interface UnifiedActiveRound {
+  id: string
+  gameType: AdminGameType
+  userId: string
+  username: string
+  email: string
+  bet: number
+  stateSummary: string
+  multiplier: number
+  potentialWin: number
+  createdAt: string
+  mines?: number
+  boardSize?: number
+  revealedCount?: number
+  streak?: number
+  cardsCount?: number
+  handScore?: number
+}
+
 export interface AdminStats {
   activePlayersCount: number
   totalUsersCount: number
@@ -18,18 +39,7 @@ export interface AdminStats {
   totalRounds: number
   wonRounds: number
   lostRounds: number
-  activeRounds: Array<{
-    id: string
-    userId: string
-    username: string
-    bet: number
-    mines: number
-    boardSize: number
-    revealedCount: number
-    multiplier: number
-    potentialWin: number
-    createdAt: string
-  }>
+  activeRounds: UnifiedActiveRound[]
 }
 
 export interface AdminDashboardData {
@@ -82,18 +92,7 @@ export interface AdminDashboardData {
     amount: number
     createdAt: string
   }>
-  activeRounds: Array<{
-    id: string
-    userId: string
-    username: string
-    bet: number
-    mines: number
-    boardSize: number
-    revealedCount: number
-    multiplier: number
-    potentialWin: number
-    createdAt: string
-  }>
+  activeRounds: UnifiedActiveRound[]
 }
 
 export interface AdminPlayer {
@@ -184,6 +183,37 @@ export const adminApi = {
     const res = await api.delete(`/api/admin/users/${userId}`, {
       headers: getAdminHeaders(),
     })
+    return res.data
+  },
+
+  getActiveRounds: async (gameType: string = 'ALL'): Promise<{ rounds: UnifiedActiveRound[]; total: number }> => {
+    const res = await api.get<{ rounds: UnifiedActiveRound[]; total: number }>(
+      `/api/admin/active-rounds?gameType=${gameType}`,
+      { headers: getAdminHeaders() }
+    )
+    return res.data
+  },
+
+  stopRound: async (
+    gameType: string,
+    roundId: string,
+    action: 'REFUND' | 'CASHOUT' = 'REFUND',
+    reason?: string
+  ) => {
+    const res = await api.post(
+      `/api/admin/rounds/${gameType}/${roundId}/stop`,
+      { action, reason },
+      { headers: getAdminHeaders() }
+    )
+    return res.data
+  },
+
+  stopAllRounds: async (gameType: string = 'ALL', reason?: string) => {
+    const res = await api.post(
+      `/api/admin/rounds/stop-all`,
+      { gameType, reason },
+      { headers: getAdminHeaders() }
+    )
     return res.data
   },
 }
