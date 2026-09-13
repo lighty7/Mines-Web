@@ -1,21 +1,17 @@
 import React from 'react'
-import { motion } from 'framer-motion'
 import { RotateCcw, Trash2, Play } from 'lucide-react'
 import { useRouletteStore } from '../../store/rouletteStore'
 import { useAuthStore } from '../../store/authStore'
 import { useAudio } from '../../hooks/useAudio'
+import { Chip } from '../ui/Chip'
+import { Button } from '../ui/Button'
+import { CurrencyDisplay } from '../ui/CurrencyDisplay'
 
 interface ChipSelectorProps {
   onSpin: () => void
 }
 
-const CHIPS = [
-  { value: 1, color: 'bg-zinc-100 text-zinc-900 border-zinc-300' },
-  { value: 5, color: 'bg-rose-600 text-white border-rose-400' },
-  { value: 25, color: 'bg-emerald-600 text-white border-emerald-400' },
-  { value: 100, color: 'bg-zinc-900 text-yellow-400 border-yellow-500' },
-  { value: 500, color: 'bg-purple-600 text-white border-purple-400' },
-]
+const CHIP_VALUES = [1, 5, 25, 100, 500]
 
 export const ChipSelector: React.FC<ChipSelectorProps> = ({ onSpin }) => {
   const {
@@ -35,98 +31,100 @@ export const ChipSelector: React.FC<ChipSelectorProps> = ({ onSpin }) => {
   const canSpin = totalBet > 0 && user.balance >= totalBet && !isSpinning
 
   return (
-    <div className="w-full bg-panel border border-tile-border rounded-3xl p-4 sm:p-5 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
-      {/* Chips Selection Palette */}
-      <div className="flex items-center gap-2 sm:gap-3">
-        <span className="text-xs text-text-secondary font-medium mr-1 hidden md:inline">CHIPS:</span>
-        {CHIPS.map((c) => (
-          <motion.button
-            key={c.value}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            disabled={isSpinning}
-            onClick={() => {
-              playChipPlace()
-              setSelectedChip(c.value)
-            }}
-            className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 font-mono font-black text-xs sm:text-sm flex items-center justify-center shadow-md transition-all ${
-              c.color
-            } ${
-              selectedChip === c.value
-                ? 'ring-4 ring-primary ring-offset-2 ring-offset-background scale-105'
-                : 'opacity-85 hover:opacity-100'
-            }`}
-          >
-            {c.value}
-          </motion.button>
-        ))}
+    <div className="w-full bg-surface-2/90 border border-border-default rounded-3xl p-5 shadow-2xl flex flex-col gap-4 backdrop-blur-md">
+      {/* 1. Chips Selection Palette */}
+      <div className="flex flex-col gap-2">
+        <label className="text-xs font-semibold text-text-secondary">
+          Select Chip Value
+        </label>
+        <div className="flex items-center justify-between gap-1 sm:gap-2">
+          {CHIP_VALUES.map((val) => (
+            <Chip
+              key={val}
+              value={val}
+              isSelected={selectedChip === val}
+              disabled={isSpinning}
+              onClick={() => {
+                playChipPlace()
+                setSelectedChip(val)
+              }}
+              size="md"
+            />
+          ))}
+        </div>
       </div>
 
-      {/* Action Controls: Undo, Double, Clear */}
+      {/* 2. Action Controls: Undo, Double, Clear */}
       <div className="flex items-center gap-2">
         <button
+          type="button"
           disabled={isSpinning || placedBets.length === 0}
           onClick={() => {
             playClick()
             undoBet()
           }}
-          className="p-2.5 bg-tile hover:bg-tile-hover border border-tile-border rounded-xl text-xs font-bold text-text-secondary hover:text-white transition-all disabled:opacity-50"
-          title="Undo last chip"
+          className="flex-1 py-2 bg-surface-3 hover:bg-surface-hover border border-border-default rounded-xl text-xs font-bold text-text-secondary hover:text-text-primary transition-all disabled:opacity-40 flex items-center justify-center gap-1 cursor-pointer"
+          title="Undo last placed chip"
         >
-          <RotateCcw className="w-4 h-4" />
+          <RotateCcw className="w-3.5 h-3.5" />
+          <span>Undo</span>
         </button>
 
         <button
+          type="button"
           disabled={isSpinning || placedBets.length === 0}
           onClick={() => {
             playChipPlace()
             doubleBets()
           }}
-          className="px-3 py-2 bg-tile hover:bg-tile-hover border border-tile-border rounded-xl text-xs font-bold text-text-secondary hover:text-white transition-all disabled:opacity-50"
+          className="flex-1 py-2 bg-surface-3 hover:bg-surface-hover border border-border-default rounded-xl text-xs font-bold text-text-secondary hover:text-text-primary transition-all disabled:opacity-40 cursor-pointer"
         >
           2× Double
         </button>
 
         <button
+          type="button"
           disabled={isSpinning || placedBets.length === 0}
           onClick={() => {
             playClick()
             clearBets()
           }}
-          className="p-2.5 bg-tile hover:bg-tile-hover border border-tile-border rounded-xl text-xs font-bold text-rose-400 hover:text-rose-300 transition-all disabled:opacity-50"
-          title="Clear all bets"
+          className="py-2 px-3 bg-surface-3 hover:bg-surface-hover border border-border-default rounded-xl text-xs font-bold text-danger hover:brightness-110 transition-all disabled:opacity-40 flex items-center justify-center cursor-pointer"
+          title="Clear all chips"
         >
-          <Trash2 className="w-4 h-4" />
+          <Trash2 className="w-3.5 h-3.5" />
         </button>
       </div>
 
-      {/* Total Bet & Big Spin Button */}
-      <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-        <div className="flex flex-col text-right">
-          <span className="text-[10px] text-text-secondary font-medium">TOTAL BET</span>
-          <span className="text-base font-extrabold text-white font-mono leading-none">
-            {totalBet.toFixed(2)}
-          </span>
-        </div>
-
-        <motion.button
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.97 }}
-          disabled={!canSpin}
-          onClick={() => {
-            playClick()
-            onSpin()
-          }}
-          className={`px-6 py-3.5 rounded-2xl font-black text-sm uppercase tracking-wider transition-all shadow-lg flex items-center gap-2 ${
-            canSpin
-              ? 'bg-primary hover:bg-primary-hover text-black shadow-primary/25'
-              : 'bg-tile border border-tile-border text-text-secondary opacity-50 cursor-not-allowed'
-          }`}
-        >
-          <Play className="w-4 h-4 fill-current" />
-          <span>{isSpinning ? 'SPINNING...' : 'SPIN'}</span>
-        </motion.button>
+      {/* 3. Total Bet Status */}
+      <div className="p-3 bg-surface-3 border border-border-default rounded-2xl flex items-center justify-between">
+        <span className="text-xs text-text-secondary font-medium">TOTAL WAGER</span>
+        <CurrencyDisplay amount={totalBet} size="sm" />
       </div>
+
+      {/* 4. Main SPIN Button */}
+      <Button
+        variant="primary"
+        size="xl"
+        fullWidth
+        disabled={!canSpin}
+        onClick={() => {
+          playClick()
+          onSpin()
+        }}
+        isLoading={isSpinning}
+        leftIcon={<Play className="w-5 h-5 fill-current" />}
+      >
+        {isSpinning ? (
+          <span>SPINNING...</span>
+        ) : !canSpin && totalBet > 0 && user.balance < totalBet ? (
+          <span>INSUFFICIENT BALANCE</span>
+        ) : totalBet === 0 ? (
+          <span>PLACE A BET TO SPIN</span>
+        ) : (
+          <span>SPIN ({totalBet.toFixed(2)} MC)</span>
+        )}
+      </Button>
     </div>
   )
 }

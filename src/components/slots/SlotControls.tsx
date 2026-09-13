@@ -7,10 +7,15 @@ import {
   Repeat,
   Info,
   Layers,
+  Play,
 } from 'lucide-react'
 import { useSlotStore } from '../../store/slotStore'
 import { useAuthStore } from '../../store/authStore'
 import { useAudio } from '../../hooks/useAudio'
+import { Input } from '../ui/Input'
+import { Button } from '../ui/Button'
+import { CurrencyDisplay } from '../ui/CurrencyDisplay'
+import { Badge } from '../ui/Badge'
 
 interface SlotControlsProps {
   onSpin: () => void
@@ -53,89 +58,67 @@ export const SlotControls: React.FC<SlotControlsProps> = ({ onSpin, onOpenPaytab
   }
 
   return (
-    <div className="bg-panel border border-tile-border rounded-3xl p-5 shadow-2xl flex flex-col gap-4 text-text-primary">
+    <div className="bg-surface-2/90 border border-border-default rounded-3xl p-5 shadow-2xl flex flex-col gap-4 text-text-primary backdrop-blur-md">
       {/* Top Header: Free Spins or Win Banner */}
       {isFreeSpin ? (
         <motion.div
           animate={{ scale: [1, 1.02, 1] }}
           transition={{ repeat: Infinity, duration: 1.5 }}
-          className="p-3 bg-gradient-to-r from-orange-500/20 to-amber-500/20 border border-orange-500/40 rounded-2xl flex items-center justify-between"
+          className="p-3 bg-game-slots/15 border border-game-slots/30 rounded-2xl flex items-center justify-between"
         >
-          <div className="flex items-center gap-2 text-orange-300 font-bold text-sm">
-            <Sparkles className="w-5 h-5 text-orange-400 animate-spin" />
+          <div className="flex items-center gap-2 text-game-slots font-bold text-xs">
+            <Sparkles className="w-4 h-4 animate-spin text-game-slots" />
             <span>FREE SPINS ACTIVE</span>
           </div>
-          <span className="px-3 py-1 bg-orange-500 text-black font-extrabold text-sm rounded-full">
-            {freeSpinsRemaining} REMAINING
-          </span>
+          <Badge variant="gold" size="sm">
+            {freeSpinsRemaining} LEFT
+          </Badge>
         </motion.div>
       ) : totalPayout > 0 ? (
         <div className="p-3 bg-primary/10 border border-primary/30 rounded-2xl flex items-center justify-between">
-          <span className="text-xs text-text-secondary">LAST WIN</span>
+          <span className="text-xs text-text-secondary font-medium">LAST WIN</span>
           <div className="flex items-center gap-2">
-            <span className="text-xs px-2 py-0.5 bg-primary/20 text-primary font-bold rounded">
-              {totalMultiplier}x
-            </span>
-            <span className="text-base font-extrabold text-primary font-mono">
-              +{totalPayout.toFixed(2)}
-            </span>
+            <Badge variant="primary" size="sm">
+              {totalMultiplier}×
+            </Badge>
+            <CurrencyDisplay amount={totalPayout} size="sm" showSign className="text-primary" />
           </div>
         </div>
       ) : null}
 
       {/* Bet Per Line Section */}
       <div className="flex flex-col gap-1.5">
-        <div className="flex items-center justify-between text-xs text-text-secondary font-medium">
-          <span>Bet Per Line</span>
-          <span>Max: 100.00</span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-text-secondary">
-              <Coins className="w-4 h-4 text-yellow-400" />
+        <Input
+          label="Bet Per Line"
+          labelRight={
+            <div className="flex items-center gap-1 text-[11px] text-text-muted">
+              <span>Balance:</span>
+              <CurrencyDisplay amount={user.balance} size="xs" />
             </div>
-            <input
-              type="number"
-              step="0.05"
-              min="0.05"
-              max="100"
-              disabled={isSpinning || isFreeSpin}
-              value={betPerLine}
-              onChange={(e) => setBetPerLine(parseFloat(e.target.value) || 0.05)}
-              className="w-full pl-9 pr-3 py-2.5 bg-tile/70 border border-tile-border rounded-xl text-sm font-bold text-text-primary focus:outline-none focus:border-primary disabled:opacity-50"
-            />
-          </div>
-
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => handleBetChange(betPerLine / 2)}
-              disabled={isSpinning || isFreeSpin}
-              className="px-2.5 py-2.5 bg-tile border border-tile-border hover:border-text-secondary/50 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
-            >
-              ½
-            </button>
-            <button
-              onClick={() => handleBetChange(betPerLine * 2)}
-              disabled={isSpinning || isFreeSpin}
-              className="px-2.5 py-2.5 bg-tile border border-tile-border hover:border-text-secondary/50 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
-            >
-              2×
-            </button>
-          </div>
-        </div>
+          }
+          type="number"
+          step="0.05"
+          min="0.05"
+          max="100"
+          disabled={isSpinning || isFreeSpin}
+          value={betPerLine}
+          onChange={(e) => setBetPerLine(parseFloat(e.target.value) || 0.05)}
+          leftIcon={<Coins className="w-4 h-4 text-accent-gold" />}
+          suffix="MC"
+        />
 
         {/* Quick Bet Pills */}
         <div className="grid grid-cols-6 gap-1 mt-1">
           {quickBets.map((b) => (
             <button
               key={b}
+              type="button"
               disabled={isSpinning || isFreeSpin}
               onClick={() => handleBetChange(b)}
-              className={`py-1 rounded-lg text-[11px] font-bold transition-all ${
+              className={`py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
                 betPerLine === b
-                  ? 'bg-primary text-black font-extrabold'
-                  : 'bg-tile/40 hover:bg-tile border border-tile-border/50 text-text-secondary'
+                  ? 'bg-primary text-black font-extrabold shadow-sm'
+                  : 'bg-surface-3 hover:bg-surface-hover border border-border-default text-text-secondary hover:text-text-primary'
               }`}
             >
               {b}
@@ -158,12 +141,13 @@ export const SlotControls: React.FC<SlotControlsProps> = ({ onSpin, onOpenPaytab
           {[1, 5, 10, 20].map((l) => (
             <button
               key={l}
+              type="button"
               disabled={isSpinning || isFreeSpin}
               onClick={() => handleLinesChange(l)}
-              className={`py-2 rounded-xl text-xs font-bold border transition-all ${
+              className={`py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                 lines === l
                   ? 'bg-primary/20 border-primary text-primary shadow-sm'
-                  : 'bg-tile/40 border-tile-border/60 hover:border-text-secondary/50 text-text-secondary'
+                  : 'bg-surface-3 border-border-default hover:border-border-strong text-text-secondary hover:text-text-primary'
               }`}
             >
               {l} {l === 1 ? 'Line' : 'Lines'}
@@ -173,28 +157,31 @@ export const SlotControls: React.FC<SlotControlsProps> = ({ onSpin, onOpenPaytab
       </div>
 
       {/* Total Bet Summary Pill */}
-      <div className="p-3 bg-tile/40 border border-tile-border/50 rounded-2xl flex items-center justify-between">
+      <div className="p-3 bg-surface-3 border border-border-default rounded-2xl flex items-center justify-between">
         <span className="text-xs text-text-secondary font-medium">TOTAL WAGER</span>
         <div className="flex items-center gap-1.5">
-          <Coins className="w-4 h-4 text-yellow-400" />
-          <span className="text-base font-extrabold text-white font-mono">
-            {isFreeSpin ? '0.00 (FREE)' : totalBet.toFixed(2)}
-          </span>
+          <Coins className="w-4 h-4 text-accent-gold" />
+          {isFreeSpin ? (
+            <span className="text-sm font-bold text-accent-gold font-mono">0.00 MC (FREE)</span>
+          ) : (
+            <CurrencyDisplay amount={totalBet} size="sm" />
+          )}
         </div>
       </div>
 
       {/* Toggles: Turbo, Auto, Paytable */}
       <div className="grid grid-cols-3 gap-2">
         <button
+          type="button"
           onClick={() => {
             playClick()
             toggleTurboMode()
           }}
           disabled={isSpinning}
-          className={`py-2 px-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+          className={`py-2 px-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
             turboMode
-              ? 'bg-yellow-500/20 border-yellow-500 text-yellow-400'
-              : 'bg-tile/40 border-tile-border/60 text-text-secondary hover:text-white'
+              ? 'bg-accent-gold/20 border-accent-gold text-accent-gold shadow-sm'
+              : 'bg-surface-3 border-border-default text-text-secondary hover:text-text-primary'
           }`}
         >
           <Zap className="w-3.5 h-3.5" />
@@ -202,26 +189,28 @@ export const SlotControls: React.FC<SlotControlsProps> = ({ onSpin, onOpenPaytab
         </button>
 
         <button
+          type="button"
           onClick={() => {
             playClick()
             toggleAutoSpin()
           }}
-          className={`py-2 px-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+          className={`py-2 px-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
             autoSpin
-              ? 'bg-primary/20 border-primary text-primary animate-pulse'
-              : 'bg-tile/40 border-tile-border/60 text-text-secondary hover:text-white'
+              ? 'bg-primary/20 border-primary text-primary animate-pulse shadow-sm'
+              : 'bg-surface-3 border-border-default text-text-secondary hover:text-text-primary'
           }`}
         >
           <Repeat className="w-3.5 h-3.5" />
-          <span>{autoSpin ? 'Stop Auto' : 'Auto'}</span>
+          <span>{autoSpin ? 'Stop' : 'Auto'}</span>
         </button>
 
         <button
+          type="button"
           onClick={() => {
             playClick()
             onOpenPaytable()
           }}
-          className="py-2 px-2.5 bg-tile/40 hover:bg-tile border border-tile-border/60 rounded-xl text-xs font-bold text-text-secondary hover:text-white flex items-center justify-center gap-1.5 transition-all"
+          className="py-2 px-2.5 bg-surface-3 hover:bg-surface-hover border border-border-default rounded-xl text-xs font-bold text-text-secondary hover:text-text-primary flex items-center justify-center gap-1.5 transition-all cursor-pointer"
         >
           <Info className="w-3.5 h-3.5 text-primary" />
           <span>Paytable</span>
@@ -229,37 +218,28 @@ export const SlotControls: React.FC<SlotControlsProps> = ({ onSpin, onOpenPaytab
       </div>
 
       {/* Main Big Neon SPIN Button */}
-      <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
+      <Button
+        variant={isFreeSpin ? 'gold' : 'primary'}
+        size="xl"
+        fullWidth
         disabled={isSpinning || (!isFreeSpin && user.balance < totalBet)}
         onClick={() => {
           playClick()
           onSpin()
         }}
-        className={`w-full py-4 rounded-2xl font-black text-lg tracking-wider uppercase transition-all shadow-xl flex items-center justify-center gap-2 ${
-          isSpinning
-            ? 'bg-tile text-text-secondary border border-tile-border cursor-not-allowed'
-            : isFreeSpin
-            ? 'bg-gradient-to-r from-orange-500 to-amber-400 text-black shadow-orange-500/30'
-            : canSpin
-            ? 'bg-primary hover:bg-primary-hover text-black shadow-primary/30'
-            : 'bg-tile text-text-secondary border border-tile-border opacity-60'
-        }`}
+        isLoading={isSpinning}
+        leftIcon={<Play className="w-5 h-5 fill-current" />}
       >
         {isSpinning ? (
-          <span className="flex items-center gap-2">
-            <span className="w-4 h-4 border-2 border-text-secondary border-t-white rounded-full animate-spin" />
-            SPINNING...
-          </span>
+          <span>SPINNING...</span>
         ) : isFreeSpin ? (
           <span>FREE SPIN ({freeSpinsRemaining})</span>
         ) : !canSpin ? (
           <span>INSUFFICIENT BALANCE</span>
         ) : (
-          <span>SPIN ({totalBet.toFixed(2)})</span>
+          <span>SPIN ({totalBet.toFixed(2)} MC)</span>
         )}
-      </motion.button>
+      </Button>
     </div>
   )
 }

@@ -1,15 +1,23 @@
 import React from 'react'
-import { Volume2, VolumeX, User, Coins, RefreshCw, LogIn, UserPlus } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { Volume2, VolumeX, Coins, RefreshCw, LogIn, UserPlus } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { useAudio } from '../../hooks/useAudio'
 import { CasinoGame } from '../../types'
+import { CurrencyDisplay } from '../ui/CurrencyDisplay'
+import { Button } from '../ui/Button'
 
-export const CASINO_GAMES: Array<{ id: CasinoGame; name: string; icon: string }> = [
-  { id: 'mines', name: 'Mines', icon: '💣' },
-  { id: 'slots', name: 'Slots', icon: '🎰' },
-  { id: 'roulette', name: 'Roulette', icon: '🎡' },
-  { id: 'blackjack', name: 'Blackjack', icon: '🃏' },
-  { id: 'coinflip', name: 'Coin Flip', icon: '🪙' },
+export const CASINO_GAMES: Array<{
+  id: CasinoGame
+  name: string
+  icon: string
+  accentColor: string
+}> = [
+  { id: 'mines', name: 'Mines', icon: '💣', accentColor: '#18C964' },
+  { id: 'slots', name: 'Slots', icon: '🎰', accentColor: '#F59E0B' },
+  { id: 'roulette', name: 'Roulette', icon: '🎡', accentColor: '#EF4444' },
+  { id: 'blackjack', name: 'Blackjack', icon: '🃏', accentColor: '#22D3EE' },
+  { id: 'coinflip', name: 'Coin Flip', icon: '🪙', accentColor: '#F5C451' },
 ]
 
 interface HeaderProps {
@@ -37,147 +45,178 @@ export const Header: React.FC<HeaderProps> = ({
   }
 
   return (
-    <header className="w-full bg-panel/90 backdrop-blur-md border-b border-tile-border/60 sticky top-0 z-30 px-2.5 sm:px-4 lg:px-8 py-2.5 sm:py-3.5">
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
-        {/* Left: Branding */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-primary to-emerald-600 flex items-center justify-center shadow-md shadow-primary/20 flex-shrink-0">
-            <span className="text-base sm:text-xl select-none">💣</span>
+    <header className="w-full bg-surface-1/90 backdrop-blur-lg border-b border-border-default sticky top-0 z-30 transition-all">
+      {/* 1. Main Top Bar */}
+      <div className="max-w-7xl mx-auto px-4 lg:px-8 py-2.5 flex items-center justify-between gap-3">
+        {/* Left: Branding & System Status */}
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-primary via-emerald-500 to-teal-400 flex items-center justify-center shadow-md shadow-primary/20 flex-shrink-0 select-none text-lg sm:text-xl">
+            💎
           </div>
+
           <div>
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <h1 className="text-base sm:text-xl font-extrabold tracking-wider bg-gradient-to-r from-text-primary via-emerald-200 to-primary bg-clip-text text-transparent leading-none">
-                MINES
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-base sm:text-lg font-black tracking-wider bg-gradient-to-r from-text-primary via-emerald-200 to-primary bg-clip-text text-transparent leading-none">
+                MINES CASINO
               </h1>
-              <span className="text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded font-mono font-bold bg-primary/15 text-primary border border-primary/30 leading-none">
-                v2.0
-              </span>
             </div>
-            <div className="flex items-center gap-1 text-[11px] text-text-secondary mt-0.5">
+            <div className="flex items-center gap-1.5 text-[11px] text-text-secondary mt-0.5">
               <span
-                className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${
+                className={`w-1.5 h-1.5 rounded-full ${
                   serverOnline === true
                     ? 'bg-primary animate-pulse'
                     : serverOnline === false
-                    ? 'bg-accent-red'
-                    : 'bg-yellow-400'
+                    ? 'bg-danger'
+                    : 'bg-warning'
                 }`}
               />
-              <span className="hidden md:inline text-[11px]">
-                {serverOnline === true ? 'Server Online' : serverOnline === false ? 'Offline Mode' : 'Connecting...'}
+              <span className="hidden sm:inline text-[11px] font-medium">
+                {serverOnline === true
+                  ? 'Provably Fair Suite'
+                  : serverOnline === false
+                  ? 'Offline Simulation Mode'
+                  : 'Connecting...'}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Right: Balance & Actions */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5">
+        {/* Right: Balance, Sound, Profile & Auth CTAs */}
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* Wallet Balance Display */}
-          <div className="flex items-center bg-tile border border-tile-border rounded-lg sm:rounded-xl px-2 sm:px-3 py-1 sm:py-1.5 gap-1.5 sm:gap-2 shadow-inner">
-            <Coins className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent-gold flex-shrink-0" />
+          <div className="flex items-center bg-surface-2 border border-border-default rounded-xl px-2.5 sm:px-3.5 py-1.5 gap-2 shadow-inner">
+            <Coins className="w-4 h-4 text-accent-gold flex-shrink-0" />
             <div className="flex flex-col text-right">
-              <span className="hidden sm:block text-[10px] text-text-secondary font-medium leading-none">Balance</span>
-              <span className="text-xs sm:text-sm md:text-base font-bold font-mono text-primary leading-tight whitespace-nowrap">
-                {user.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                <span className="hidden sm:inline text-[10px] text-text-secondary font-sans font-normal ml-1">mineCoin</span>
+              <span className="hidden sm:block text-[10px] text-text-muted font-bold uppercase tracking-wider leading-none">
+                Balance
               </span>
+              <CurrencyDisplay
+                amount={user.balance}
+                size="sm"
+                className="text-primary leading-tight"
+              />
             </div>
             {!user.isGuest && (
               <button
+                type="button"
                 onClick={handleRefresh}
                 title="Refresh balance"
-                className="text-text-secondary hover:text-text-primary transition-colors p-0.5 sm:p-1 rounded hover:bg-tile-hover ml-0.5"
+                className="text-text-secondary hover:text-text-primary p-1 rounded hover:bg-surface-3 transition-colors ml-0.5"
               >
-                <RefreshCw className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${isRefreshing ? 'animate-spin text-primary' : ''}`} />
+                <RefreshCw
+                  className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-primary' : ''}`}
+                />
               </button>
             )}
           </div>
 
           {/* Sound Toggle */}
           <button
+            type="button"
             onClick={() => {
               playClick()
               toggleMute()
             }}
             title={muted ? 'Unmute Sound' : 'Mute Sound'}
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-tile border border-tile-border flex items-center justify-center text-text-secondary hover:text-text-primary hover:border-tile-hover transition-all flex-shrink-0"
+            className="w-9 h-9 rounded-xl bg-surface-2 border border-border-default hover:border-border-strong flex items-center justify-center text-text-secondary hover:text-text-primary transition-all flex-shrink-0 cursor-pointer"
           >
-            {muted ? <VolumeX className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent-red" /> : <Volume2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />}
+            {muted ? (
+              <VolumeX className="w-4 h-4 text-danger" />
+            ) : (
+              <Volume2 className="w-4 h-4 text-primary" />
+            )}
           </button>
 
-          {/* User Profile or Login/Register */}
+          {/* User Profile or Guest Auth */}
           {user.isGuest ? (
-            <div className="flex items-center gap-1 sm:gap-1.5">
-              <button
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="ghost"
+                size="sm"
+                leftIcon={<LogIn className="w-3.5 h-3.5" />}
                 onClick={() => {
                   playClick()
                   onOpenAuth('signin')
                 }}
-                title="Sign In"
-                className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold bg-tile hover:bg-tile-hover border border-tile-border text-text-primary transition-all"
               >
-                <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-text-secondary" />
-                <span className="hidden min-[480px]:inline">Sign In</span>
-              </button>
+                <span className="hidden sm:inline">Sign In</span>
+              </Button>
 
-              <button
+              <Button
+                variant="primary"
+                size="sm"
+                leftIcon={<UserPlus className="w-3.5 h-3.5" />}
                 onClick={() => {
                   playClick()
                   onOpenAuth('register')
                 }}
-                title="Register"
-                className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold bg-primary hover:bg-primary-hover text-black shadow-md shadow-primary/20 transition-all whitespace-nowrap"
               >
-                <UserPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span className="hidden min-[480px]:inline">Register</span>
-              </button>
+                <span className="hidden sm:inline">Register</span>
+              </Button>
             </div>
           ) : (
             <button
+              type="button"
               onClick={() => {
                 playClick()
                 onOpenProfile()
               }}
-              className="flex items-center gap-2 bg-tile hover:bg-tile-hover border border-tile-border hover:border-primary/40 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1 sm:py-1.5 transition-all"
+              className="flex items-center gap-2 bg-surface-2 hover:bg-surface-3 border border-border-default hover:border-primary/40 rounded-xl px-2.5 py-1.5 transition-all cursor-pointer"
             >
-              <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-md sm:rounded-lg bg-gradient-to-tr from-primary to-emerald-400 flex items-center justify-center text-black font-bold text-xs flex-shrink-0">
+              <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-primary to-emerald-400 flex items-center justify-center text-black font-extrabold text-xs flex-shrink-0">
                 {user.username.charAt(0).toUpperCase()}
               </div>
               <div className="hidden md:flex flex-col text-left">
-                <span className="text-xs font-semibold text-text-primary leading-tight">{user.username}</span>
-                <span className="text-[10px] text-primary leading-none">Verified</span>
+                <span className="text-xs font-bold text-text-primary leading-tight">
+                  {user.username}
+                </span>
+                <span className="text-[10px] text-primary font-medium leading-none">
+                  Verified
+                </span>
               </div>
-              <User className="w-3.5 h-3.5 text-text-secondary md:hidden" />
             </button>
           )}
         </div>
       </div>
 
-      {/* Sub-Header: Responsive Casino Game Navigation Bar */}
-      <div className="max-w-7xl mx-auto mt-2 pt-2 border-t border-tile-border/40 flex items-center justify-start sm:justify-center overflow-x-auto no-scrollbar gap-1.5 py-0.5">
-        {CASINO_GAMES.map((game) => (
-          <button
-            key={game.id}
-            onClick={() => {
-              playClick()
-              onSelectGame(game.id)
-            }}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap flex-shrink-0 ${
-              activeGame === game.id
-                ? 'bg-primary text-black shadow-md font-extrabold shadow-primary/20'
-                : 'bg-tile/50 hover:bg-tile border border-tile-border/60 text-text-secondary hover:text-white'
-            }`}
-          >
-            <span className="text-sm">{game.icon}</span>
-            <span>{game.name}</span>
-            {game.id === 'mines' && (
-              <span className="text-[9px] px-1 py-0.2 bg-black/30 rounded font-mono">HOT</span>
-            )}
-            {game.id === 'slots' && (
-              <span className="text-[9px] px-1 py-0.2 bg-black/30 rounded font-mono">NEW</span>
-            )}
-          </button>
-        ))}
+      {/* 2. Sub-Header: Casino Game Navigation Bar */}
+      <div className="w-full border-t border-border-subtle bg-surface-2/40 px-2 sm:px-4">
+        <nav
+          aria-label="Casino Games"
+          className="max-w-7xl mx-auto flex items-center justify-start sm:justify-center overflow-x-auto no-scrollbar gap-1 sm:gap-2 py-1.5"
+        >
+          {CASINO_GAMES.map((game) => {
+            const isActive = activeGame === game.id
+
+            return (
+              <button
+                key={game.id}
+                type="button"
+                onClick={() => {
+                  playClick()
+                  onSelectGame(game.id)
+                }}
+                className={`relative px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all whitespace-nowrap flex-shrink-0 cursor-pointer ${
+                  isActive
+                    ? 'text-text-primary'
+                    : 'text-text-secondary hover:text-text-primary hover:bg-surface-3/50'
+                }`}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="activeGameNavPill"
+                    transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+                    className="absolute inset-0 bg-surface-3 border border-border-strong rounded-xl shadow-sm -z-10"
+                    style={{ borderBottomColor: game.accentColor, borderBottomWidth: '2px' }}
+                  />
+                )}
+
+                <span className="text-sm select-none">{game.icon}</span>
+                <span>{game.name}</span>
+              </button>
+            )
+          })}
+        </nav>
       </div>
     </header>
   )

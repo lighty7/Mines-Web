@@ -84,15 +84,58 @@ export const Tile: React.FC<TileProps> = ({ tile, gameState, disabled, onClick }
         {/* MINE EXPLOSION (BOMB) */}
         {isMine && (
           <motion.div
-            initial={{ scale: 0, rotate: 90 }}
+            initial={{ scale: 0, rotate: -25 }}
             animate={{ scale: 1, rotate: 0 }}
             transition={{ type: 'spring', stiffness: 500, damping: 12 }}
             className="flex items-center justify-center relative"
           >
-            <div className="absolute inset-0 bg-accent-red/40 rounded-full blur-md animate-pulse" />
-            <span className="text-2xl sm:text-3xl select-none filter drop-shadow-[0_0_8px_rgba(240,68,68,0.9)]">
-              💥
-            </span>
+            <div className="absolute inset-0 bg-danger/40 rounded-full blur-md animate-pulse" />
+            <svg
+              className="w-7 h-7 sm:w-8 sm:h-8 drop-shadow-[0_0_12px_rgba(239,68,68,0.9)]"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              {/* Bomb Sphere */}
+              <circle
+                cx="11"
+                cy="13"
+                r="8"
+                fill="url(#bombGradient)"
+                stroke="#EF4444"
+                strokeWidth="1.5"
+              />
+              {/* Bomb Collar / Neck */}
+              <rect
+                x="9"
+                y="3.5"
+                width="4"
+                height="2.5"
+                rx="0.5"
+                fill="#F87171"
+                stroke="#EF4444"
+                strokeWidth="1"
+              />
+              {/* Fuse curve */}
+              <path
+                d="M13 4C14.5 3 16 3.5 17 2.5"
+                stroke="#F5C451"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+              {/* Spark */}
+              <circle cx="18" cy="2" r="1.5" fill="#EF4444" className="animate-ping" />
+              <circle cx="18" cy="2" r="1" fill="#FEF08A" />
+              {/* Bomb highlight */}
+              <ellipse cx="8" cy="10" rx="2" ry="1.2" transform="rotate(-30 8 10)" fill="#FFFFFF" fillOpacity="0.4" />
+              <defs>
+                <linearGradient id="bombGradient" x1="5" y1="7" x2="17" y2="19" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#450A0A" />
+                  <stop offset="0.5" stopColor="#991B1B" />
+                  <stop offset="1" stopColor="#EF4444" />
+                </linearGradient>
+              </defs>
+            </svg>
           </motion.div>
         )}
 

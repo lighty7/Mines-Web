@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { X, Mail, Lock, User as UserIcon, Home, CheckCircle, AlertCircle, ArrowLeft, Loader2 } from 'lucide-react'
+import { Mail, Lock, User as UserIcon, Home, ArrowLeft } from 'lucide-react'
 import { authApi } from '../../api/auth.api'
 import { useAuthStore } from '../../store/authStore'
 import { getErrorMessage } from '../../api/client'
 import { useAudio } from '../../hooks/useAudio'
+import { Modal } from '../ui/Modal'
+import { Tabs } from '../ui/Tabs'
+import { Input } from '../ui/Input'
+import { Button } from '../ui/Button'
+import { Alert } from '../ui/Alert'
 
 interface AuthModalProps {
   isOpen: boolean
@@ -65,9 +69,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialTab = 'sign
     setTab(initialTab)
     setErrorMsg(null)
     setSuccessMsg(null)
+    setIsForgot(false)
   }, [initialTab, isOpen])
-
-  if (!isOpen) return null
 
   // Handler: Sign In
   const handleSignIn = async (e: React.FormEvent) => {
@@ -175,148 +178,119 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialTab = 'sign
     }
   }
 
+  const authTabs = [
+    { id: 'signin', label: 'Sign In' },
+    { id: 'register', label: 'Create Account' },
+  ]
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="w-full max-w-md bg-panel border border-tile-border rounded-2xl shadow-2xl p-6 relative overflow-hidden"
-      >
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-text-secondary hover:text-text-primary p-1.5 rounded-lg hover:bg-tile-hover transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isForgot ? 'Reset Password' : tab === 'signin' ? 'Welcome Back' : 'Create Account'}
+      subtitle={
+        isForgot
+          ? 'Enter your email to verify and reset your passcode'
+          : tab === 'signin'
+          ? 'Sign in to access your wallet and verified stats'
+          : 'Register for live provably fair multiplayer gaming'
+      }
+      size="md"
+    >
+      <div className="flex flex-col gap-4 py-1">
         {/* Feedback Banners */}
-        <AnimatePresence>
-          {errorMsg && (
-            <motion.div
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="flex items-center gap-2 p-3 mb-4 rounded-xl bg-accent-red/15 border border-accent-red/40 text-accent-red text-xs"
-            >
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span>{errorMsg}</span>
-            </motion.div>
-          )}
-
-          {successMsg && (
-            <motion.div
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="flex items-center gap-2 p-3 mb-4 rounded-xl bg-primary/15 border border-primary/40 text-primary text-xs"
-            >
-              <CheckCircle className="w-4 h-4 flex-shrink-0" />
-              <span>{successMsg}</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {errorMsg && (
+          <Alert variant="error" onDismiss={() => setErrorMsg(null)}>
+            {errorMsg}
+          </Alert>
+        )}
+        {successMsg && (
+          <Alert variant="success" onDismiss={() => setSuccessMsg(null)}>
+            {successMsg}
+          </Alert>
+        )}
 
         {/* FORGOT PASSWORD VIEW */}
         {isForgot ? (
-          <div>
+          <div className="flex flex-col gap-4">
             <button
               type="button"
               onClick={() => {
                 setIsForgot(false)
                 setErrorMsg(null)
               }}
-              className="flex items-center gap-1.5 text-xs text-primary font-semibold mb-3 hover:underline"
+              className="inline-flex items-center gap-1.5 text-xs text-primary font-bold hover:underline cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              Back to Sign In
+              <span>Back to Sign In</span>
             </button>
 
-            <h3 className="text-xl font-bold text-text-primary mb-1">Reset Password</h3>
-            <p className="text-xs text-text-secondary mb-4">
-              {forgotStep === 0
-                ? 'Enter your registered email to receive an OTP reset code.'
-                : `Enter the 6-digit code sent to ${forgotEmail} and your new password.`}
-            </p>
-
             {forgotStep === 0 ? (
-              <form onSubmit={handleForgotSendOtp} className="flex flex-col gap-3">
-                <div>
-                  <label className="text-xs font-semibold text-text-secondary">Email Address</label>
-                  <div className="relative flex items-center mt-1">
-                    <Mail className="w-4 h-4 text-text-secondary absolute left-3 pointer-events-none" />
-                    <input
-                      type="email"
-                      required
-                      placeholder="you@example.com"
-                      value={forgotEmail}
-                      onChange={(e) => setForgotEmail(e.target.value)}
-                      className="w-full bg-tile border border-tile-border rounded-xl pl-9 pr-3.5 py-2.5 text-sm text-text-primary focus:outline-none focus:border-primary transition-colors"
-                    />
-                  </div>
-                </div>
+              <form onSubmit={handleForgotSendOtp} className="flex flex-col gap-3.5">
+                <Input
+                  label="Registered Email Address"
+                  type="email"
+                  required
+                  placeholder="you@example.com"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  leftIcon={<Mail className="w-4 h-4" />}
+                />
 
-                <button
+                <Button
                   type="submit"
+                  variant="primary"
+                  size="lg"
+                  fullWidth
                   disabled={isLoading || !forgotEmail}
-                  className="w-full mt-2 py-3 rounded-xl font-bold text-sm bg-primary hover:bg-primary-hover text-black shadow-lg shadow-primary/20 flex items-center justify-center gap-2 transition-all disabled:opacity-60"
+                  isLoading={isLoading}
                 >
-                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send Reset Code'}
-                </button>
+                  Send Verification Code
+                </Button>
               </form>
             ) : (
-              <form onSubmit={handleResetPassword} className="flex flex-col gap-3">
-                <div>
-                  <label className="text-xs font-semibold text-text-secondary">6-Digit Code</label>
-                  <input
-                    type="text"
-                    required
-                    maxLength={6}
-                    placeholder="123456"
-                    value={forgotOtpCode}
-                    onChange={(e) => setForgotOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    className="w-full bg-tile border border-tile-border rounded-xl px-3.5 py-2.5 text-center tracking-widest font-mono text-base font-bold text-text-primary focus:outline-none focus:border-primary transition-colors mt-1"
-                  />
-                </div>
+              <form onSubmit={handleResetPassword} className="flex flex-col gap-3.5">
+                <Input
+                  label="6-Digit Reset Code"
+                  type="text"
+                  required
+                  maxLength={6}
+                  placeholder="123456"
+                  value={forgotOtpCode}
+                  onChange={(e) => setForgotOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  className="text-center tracking-widest font-mono text-base font-bold"
+                />
 
-                <div>
-                  <label className="text-xs font-semibold text-text-secondary">New Password</label>
-                  <div className="relative flex items-center mt-1">
-                    <Lock className="w-4 h-4 text-text-secondary absolute left-3 pointer-events-none" />
-                    <input
-                      type="password"
-                      required
-                      placeholder="Min. 6 characters"
-                      value={forgotNewPassword}
-                      onChange={(e) => setForgotNewPassword(e.target.value)}
-                      className="w-full bg-tile border border-tile-border rounded-xl pl-9 pr-3.5 py-2.5 text-sm text-text-primary focus:outline-none focus:border-primary transition-colors"
-                    />
-                  </div>
-                </div>
+                <Input
+                  label="New Password"
+                  type="password"
+                  required
+                  placeholder="Minimum 6 characters"
+                  value={forgotNewPassword}
+                  onChange={(e) => setForgotNewPassword(e.target.value)}
+                  leftIcon={<Lock className="w-4 h-4" />}
+                />
 
-                <div>
-                  <label className="text-xs font-semibold text-text-secondary">Confirm New Password</label>
-                  <div className="relative flex items-center mt-1">
-                    <Lock className="w-4 h-4 text-text-secondary absolute left-3 pointer-events-none" />
-                    <input
-                      type="password"
-                      required
-                      placeholder="Confirm password"
-                      value={forgotConfirmPassword}
-                      onChange={(e) => setForgotConfirmPassword(e.target.value)}
-                      className="w-full bg-tile border border-tile-border rounded-xl pl-9 pr-3.5 py-2.5 text-sm text-text-primary focus:outline-none focus:border-primary transition-colors"
-                    />
-                  </div>
-                </div>
+                <Input
+                  label="Confirm New Password"
+                  type="password"
+                  required
+                  placeholder="Repeat new password"
+                  value={forgotConfirmPassword}
+                  onChange={(e) => setForgotConfirmPassword(e.target.value)}
+                  leftIcon={<Lock className="w-4 h-4" />}
+                />
 
-                <button
+                <Button
                   type="submit"
+                  variant="primary"
+                  size="lg"
+                  fullWidth
                   disabled={isLoading || forgotOtpCode.length !== 6 || !forgotNewPassword}
-                  className="w-full mt-2 py-3 rounded-xl font-bold text-sm bg-primary hover:bg-primary-hover text-black shadow-lg shadow-primary/20 flex items-center justify-center gap-2 transition-all disabled:opacity-60"
+                  isLoading={isLoading}
                 >
-                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Reset Password'}
-                </button>
+                  Reset Password
+                </Button>
 
                 <div className="flex items-center justify-between text-xs text-text-secondary pt-1">
                   <button type="button" onClick={() => setForgotStep(0)} className="hover:underline">
@@ -326,7 +300,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialTab = 'sign
                     type="button"
                     disabled={forgotTimer > 0 || isLoading}
                     onClick={handleForgotSendOtp}
-                    className="text-accent-cyan hover:underline disabled:opacity-50"
+                    className="text-primary hover:underline disabled:opacity-50"
                   >
                     {forgotTimer > 0 ? `Resend in ${forgotTimer}s` : 'Resend Code'}
                   </button>
@@ -335,58 +309,35 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialTab = 'sign
             )}
           </div>
         ) : (
-          <div>
-            {/* Tab Switcher: Sign In vs Register */}
-            <div className="grid grid-cols-2 gap-1.5 p-1 bg-tile rounded-xl border border-tile-border mb-5">
-              <button
-                type="button"
-                onClick={() => {
-                  playClick()
-                  setTab('signin')
-                  setErrorMsg(null)
-                }}
-                className={`py-2 text-xs font-bold rounded-lg transition-all ${
-                  tab === 'signin' ? 'bg-primary text-black shadow-md shadow-primary/20' : 'text-text-secondary hover:text-text-primary'
-                }`}
-              >
-                Sign In
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  playClick()
-                  setTab('register')
-                  setErrorMsg(null)
-                }}
-                className={`py-2 text-xs font-bold rounded-lg transition-all ${
-                  tab === 'register' ? 'bg-primary text-black shadow-md shadow-primary/20' : 'text-text-secondary hover:text-text-primary'
-                }`}
-              >
-                Register / Sign Up
-              </button>
-            </div>
+          <div className="flex flex-col gap-4">
+            {/* Tab Switcher */}
+            <Tabs
+              items={authTabs}
+              activeTab={tab}
+              onChange={(val) => {
+                playClick()
+                setTab(val as 'signin' | 'register')
+                setErrorMsg(null)
+              }}
+              size="md"
+            />
 
             {/* SIGN IN TAB */}
             {tab === 'signin' ? (
               <form onSubmit={handleSignIn} className="flex flex-col gap-3.5">
-                <div>
-                  <label className="text-xs font-semibold text-text-secondary">Email Address</label>
-                  <div className="relative flex items-center mt-1">
-                    <Mail className="w-4 h-4 text-text-secondary absolute left-3 pointer-events-none" />
-                    <input
-                      type="email"
-                      required
-                      placeholder="you@example.com"
-                      value={signInEmail}
-                      onChange={(e) => setSignInEmail(e.target.value)}
-                      className="w-full bg-tile border border-tile-border rounded-xl pl-9 pr-3.5 py-2.5 text-sm text-text-primary focus:outline-none focus:border-primary transition-colors"
-                    />
-                  </div>
-                </div>
+                <Input
+                  label="Email Address"
+                  type="email"
+                  required
+                  placeholder="you@example.com"
+                  value={signInEmail}
+                  onChange={(e) => setSignInEmail(e.target.value)}
+                  leftIcon={<Mail className="w-4 h-4" />}
+                />
 
-                <div>
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold text-text-secondary">Password</label>
+                <Input
+                  label="Password"
+                  labelRight={
                     <button
                       type="button"
                       onClick={() => {
@@ -394,148 +345,129 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialTab = 'sign
                         setForgotEmail(signInEmail)
                         setErrorMsg(null)
                       }}
-                      className="text-xs text-accent-cyan hover:underline"
+                      className="text-xs text-primary hover:underline cursor-pointer"
                     >
-                      Forgot password?
+                      Forgot passcode?
                     </button>
-                  </div>
-                  <div className="relative flex items-center mt-1">
-                    <Lock className="w-4 h-4 text-text-secondary absolute left-3 pointer-events-none" />
-                    <input
-                      type="password"
-                      required
-                      placeholder="••••••••"
-                      value={signInPassword}
-                      onChange={(e) => setSignInPassword(e.target.value)}
-                      className="w-full bg-tile border border-tile-border rounded-xl pl-9 pr-3.5 py-2.5 text-sm text-text-primary focus:outline-none focus:border-primary transition-colors"
-                    />
-                  </div>
-                </div>
+                  }
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  value={signInPassword}
+                  onChange={(e) => setSignInPassword(e.target.value)}
+                  leftIcon={<Lock className="w-4 h-4" />}
+                />
 
-                <button
+                <Button
                   type="submit"
+                  variant="primary"
+                  size="xl"
+                  fullWidth
                   disabled={isLoading || !signInEmail || !signInPassword}
-                  className="w-full mt-2 py-3 rounded-xl font-bold text-sm bg-primary hover:bg-primary-hover text-black shadow-lg shadow-primary/20 flex items-center justify-center gap-2 transition-all disabled:opacity-60"
+                  isLoading={isLoading}
+                  className="mt-2"
                 >
-                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Sign In'}
-                </button>
+                  Sign In to Casino
+                </Button>
               </form>
             ) : (
               /* REGISTER TAB */
               !regOtpStep ? (
                 <form onSubmit={handleSendRegOtp} className="flex flex-col gap-3">
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-semibold text-text-secondary">Username</label>
-                      <span className="text-[10px] text-text-secondary opacity-70">Letters, numbers, underscores</span>
-                    </div>
-                    <div className="relative flex items-center mt-1">
-                      <UserIcon className="w-4 h-4 text-text-secondary absolute left-3 pointer-events-none" />
-                      <input
-                        type="text"
-                        required
-                        placeholder="Player_123"
-                        value={regUsername}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 24)
-                          setRegUsername(val)
-                        }}
-                        className="w-full bg-tile border border-tile-border rounded-xl pl-9 pr-3.5 py-2.5 text-sm text-text-primary focus:outline-none focus:border-primary transition-colors"
-                      />
-                    </div>
-                  </div>
+                  <Input
+                    label="Username"
+                    type="text"
+                    required
+                    placeholder="Player_123"
+                    value={regUsername}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 24)
+                      setRegUsername(val)
+                    }}
+                    leftIcon={<UserIcon className="w-4 h-4" />}
+                  />
 
-                  <div>
-                    <label className="text-xs font-semibold text-text-secondary">Email Address</label>
-                    <div className="relative flex items-center mt-1">
-                      <Mail className="w-4 h-4 text-text-secondary absolute left-3 pointer-events-none" />
-                      <input
-                        type="email"
-                        required
-                        placeholder="you@example.com"
-                        value={regEmail}
-                        onChange={(e) => setRegEmail(e.target.value)}
-                        className="w-full bg-tile border border-tile-border rounded-xl pl-9 pr-3.5 py-2.5 text-sm text-text-primary focus:outline-none focus:border-primary transition-colors"
-                      />
-                    </div>
-                  </div>
+                  <Input
+                    label="Email Address"
+                    type="email"
+                    required
+                    placeholder="you@example.com"
+                    value={regEmail}
+                    onChange={(e) => setRegEmail(e.target.value)}
+                    leftIcon={<Mail className="w-4 h-4" />}
+                  />
 
-                  <div>
-                    <label className="text-xs font-semibold text-text-secondary">Residential Address (Optional)</label>
-                    <div className="relative flex items-center mt-1">
-                      <Home className="w-4 h-4 text-text-secondary absolute left-3 pointer-events-none" />
-                      <input
-                        type="text"
-                        placeholder="City, Country"
-                        value={regAddress}
-                        onChange={(e) => setRegAddress(e.target.value)}
-                        className="w-full bg-tile border border-tile-border rounded-xl pl-9 pr-3.5 py-2.5 text-sm text-text-primary focus:outline-none focus:border-primary transition-colors"
-                      />
-                    </div>
-                  </div>
+                  <Input
+                    label="Residential Address (Optional)"
+                    type="text"
+                    placeholder="City, Country"
+                    value={regAddress}
+                    onChange={(e) => setRegAddress(e.target.value)}
+                    leftIcon={<Home className="w-4 h-4" />}
+                  />
 
                   <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-xs font-semibold text-text-secondary">Password</label>
-                      <input
-                        type="password"
-                        required
-                        placeholder="Min 6 chars"
-                        value={regPassword}
-                        onChange={(e) => setRegPassword(e.target.value)}
-                        className="w-full bg-tile border border-tile-border rounded-xl px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-primary transition-colors mt-1"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-text-secondary">Confirm</label>
-                      <input
-                        type="password"
-                        required
-                        placeholder="Repeat"
-                        value={regConfirmPassword}
-                        onChange={(e) => setRegConfirmPassword(e.target.value)}
-                        className="w-full bg-tile border border-tile-border rounded-xl px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-primary transition-colors mt-1"
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isLoading || regUsername.length < 3 || !regEmail || regPassword.length < 6}
-                    className="w-full mt-2 py-3 rounded-xl font-bold text-sm bg-primary hover:bg-primary-hover text-black shadow-lg shadow-primary/20 flex items-center justify-center gap-2 transition-all disabled:opacity-60"
-                  >
-                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send Verification Code'}
-                  </button>
-                </form>
-              ) : (
-                /* REGISTRATION OTP VERIFICATION STEP */
-                <form onSubmit={handleVerifyRegOtp} className="flex flex-col gap-3">
-                  <div className="p-3 bg-tile border border-tile-border rounded-xl">
-                    <p className="text-xs text-text-secondary">
-                      We sent a 6-digit verification code to <span className="font-bold text-primary">{regEmail}</span>.
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-semibold text-text-secondary">Enter 6-Digit Code</label>
-                    <input
-                      type="text"
+                    <Input
+                      label="Password"
+                      type="password"
                       required
-                      maxLength={6}
-                      placeholder="123456"
-                      value={regOtpCode}
-                      onChange={(e) => setRegOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      className="w-full bg-tile border border-tile-border rounded-xl px-3.5 py-2.5 text-center tracking-widest font-mono text-base font-bold text-text-primary focus:outline-none focus:border-primary transition-colors mt-1"
+                      placeholder="Min 6 chars"
+                      value={regPassword}
+                      onChange={(e) => setRegPassword(e.target.value)}
+                    />
+                    <Input
+                      label="Confirm"
+                      type="password"
+                      required
+                      placeholder="Repeat"
+                      value={regConfirmPassword}
+                      onChange={(e) => setRegConfirmPassword(e.target.value)}
                     />
                   </div>
 
-                  <button
+                  <Button
                     type="submit"
-                    disabled={isLoading || regOtpCode.length !== 6}
-                    className="w-full mt-2 py-3 rounded-xl font-bold text-sm bg-primary hover:bg-primary-hover text-black shadow-lg shadow-primary/20 flex items-center justify-center gap-2 transition-all disabled:opacity-60"
+                    variant="primary"
+                    size="xl"
+                    fullWidth
+                    disabled={isLoading || regUsername.length < 3 || !regEmail || regPassword.length < 6}
+                    isLoading={isLoading}
+                    className="mt-2"
                   >
-                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Verify & Create Account'}
-                  </button>
+                    Send Verification Code
+                  </Button>
+                </form>
+              ) : (
+                /* REGISTRATION OTP STEP */
+                <form onSubmit={handleVerifyRegOtp} className="flex flex-col gap-3.5">
+                  <div className="p-3 bg-surface-3 border border-border-default rounded-xl">
+                    <p className="text-xs text-text-secondary">
+                      Enter the 6-digit code sent to <span className="font-bold text-primary">{regEmail}</span>.
+                    </p>
+                  </div>
+
+                  <Input
+                    label="6-Digit Verification Code"
+                    type="text"
+                    required
+                    maxLength={6}
+                    placeholder="123456"
+                    value={regOtpCode}
+                    onChange={(e) => setRegOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    className="text-center tracking-widest font-mono text-base font-bold"
+                  />
+
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="xl"
+                    fullWidth
+                    disabled={isLoading || regOtpCode.length !== 6}
+                    isLoading={isLoading}
+                    className="mt-2"
+                  >
+                    Verify & Create Account
+                  </Button>
 
                   <div className="flex items-center justify-between text-xs text-text-secondary pt-1">
                     <button type="button" onClick={() => setRegOtpStep(false)} className="hover:underline">
@@ -545,7 +477,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialTab = 'sign
                       type="button"
                       disabled={regTimer > 0 || isLoading}
                       onClick={handleSendRegOtp}
-                      className="text-accent-cyan hover:underline disabled:opacity-50"
+                      className="text-primary hover:underline disabled:opacity-50"
                     >
                       {regTimer > 0 ? `Resend in ${regTimer}s` : 'Resend Code'}
                     </button>
@@ -555,7 +487,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialTab = 'sign
             )}
           </div>
         )}
-      </motion.div>
-    </div>
+      </div>
+    </Modal>
   )
 }

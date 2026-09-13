@@ -22,6 +22,7 @@ interface SlotState {
 
   setBetPerLine: (bet: number) => void
   setLines: (lines: number) => void
+  setIsSpinning: (spinning: boolean) => void
   toggleAutoSpin: () => void
   toggleTurboMode: () => void
   clearError: () => void
@@ -63,6 +64,8 @@ export const useSlotStore = create<SlotState>((set, get) => ({
     const safeLines = Math.min(Math.max(1, lines), 20)
     set({ lines: safeLines })
   },
+
+  setIsSpinning: (spinning: boolean) => set({ isSpinning: spinning }),
 
   toggleAutoSpin: () => set((s) => ({ autoSpin: !s.autoSpin })),
   toggleTurboMode: () => set((s) => ({ turboMode: !s.turboMode })),

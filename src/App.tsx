@@ -1,7 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { Header } from './components/layout/Header'
-import { Board } from './components/game/Board'
-import { BettingControls } from './components/game/BettingControls'
 import { Footer } from './components/layout/Footer'
 import { AuthModal } from './components/auth/AuthModal'
 import { ProfileModal } from './components/profile/ProfileModal'
@@ -13,12 +11,14 @@ import { useGameStore } from './store/gameStore'
 import { useAdminStore } from './store/adminStore'
 import { useAudio } from './hooks/useAudio'
 import confetti from 'canvas-confetti'
-import { Keyboard, AlertCircle } from 'lucide-react'
+import { MinesView } from './components/mines/MinesView'
 import { SlotsView } from './components/slots/SlotsView'
 import { RouletteView } from './components/roulette/RouletteView'
 import { BlackjackView } from './components/blackjack/BlackjackView'
 import { CoinFlipView } from './components/coinflip/CoinFlipView'
 import { CasinoGame } from './types'
+import { ToastProvider } from './components/ui/Toast'
+import { Alert } from './components/ui/Alert'
 
 export const App: React.FC = () => {
   const { checkServer, refreshProfile, serverOnline } = useAuthStore()
@@ -170,7 +170,8 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background text-text-primary flex flex-col selection:bg-primary/30 selection:text-primary">
+    <ToastProvider>
+      <div className="min-h-screen bg-background text-text-primary flex flex-col selection:bg-primary/30 selection:text-primary">
       {/* Top Header */}
       <Header
         activeGame={activeGame}
@@ -183,45 +184,15 @@ export const App: React.FC = () => {
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-6 flex flex-col justify-between">
         {/* Render Cold-Start Banner (if server offline or checking) */}
         {serverOnline === false && (
-          <div className="mb-6 p-3.5 bg-yellow-500/10 border border-yellow-500/30 rounded-2xl flex items-center gap-3 text-xs text-yellow-300">
-            <AlertCircle className="w-4 h-4 flex-shrink-0 text-yellow-400" />
-            <div className="flex-1">
-              <span className="font-bold">Render Free Server Status:</span> The backend spins down after inactivity. While it wakes up (approx. 30–50s), <span className="font-semibold text-white">Guest Mode</span> is 100% active with full local simulation!
-            </div>
+          <div className="mb-6">
+            <Alert variant="warning" title="Render Server Status">
+              The backend spins down after inactivity. While it wakes up (approx. 30–50s), <span className="font-semibold text-text-primary">Guest Mode</span> is 100% active with full local simulation!
+            </Alert>
           </div>
         )}
 
         {/* Selected Casino Game View */}
-        {activeGame === 'mines' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            {/* Left Panel: Betting Controls (Col 1-5 on LG) */}
-            <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-4">
-              <BettingControls />
-
-              {/* Quick Keyboard Hotkey Pill */}
-              <div className="hidden sm:flex items-center justify-between px-4 py-2.5 bg-panel/50 border border-tile-border/50 rounded-xl text-xs text-text-secondary">
-                <div className="flex items-center gap-2">
-                  <Keyboard className="w-3.5 h-3.5 text-primary" />
-                  <span>Hotkey:</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <kbd className="px-2 py-0.5 bg-tile border border-tile-border rounded text-[10px] font-mono text-text-primary font-bold shadow-sm">
-                    Space
-                  </kbd>
-                  <span className="text-[11px]">
-                    {gameState === 'ACTIVE' ? 'Cashout' : 'Start Bet'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Panel: Board (Col 6-12 on LG) */}
-            <div className="lg:col-span-7 xl:col-span-8 flex flex-col items-center justify-center min-h-[460px]">
-              <Board />
-            </div>
-          </div>
-        )}
-
+        {activeGame === 'mines' && <MinesView />}
         {activeGame === 'slots' && <SlotsView />}
         {activeGame === 'roulette' && <RouletteView />}
         {activeGame === 'blackjack' && <BlackjackView />}
@@ -261,6 +232,7 @@ export const App: React.FC = () => {
         }}
       />
     </div>
+    </ToastProvider>
   )
 }
 
