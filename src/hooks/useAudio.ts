@@ -216,6 +216,265 @@ export function useAudio() {
     } catch (_) {}
   }, [muted])
 
+  // Coin flick metallic ring
+  const playCoinFlick = useCallback(() => {
+    if (muted) return
+    try {
+      const ctx = getAudioContext()
+      const now = ctx.currentTime
+
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(1400, now)
+      osc.frequency.exponentialRampToValueAtTime(2800, now + 0.05)
+      osc.frequency.exponentialRampToValueAtTime(1800, now + 0.15)
+
+      gain.gain.setValueAtTime(0.2, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3)
+
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+
+      osc.start(now)
+      osc.stop(now + 0.3)
+    } catch (_) {}
+  }, [muted])
+
+  // Coin catch percussive landing
+  const playCoinCatch = useCallback(() => {
+    if (muted) return
+    try {
+      const ctx = getAudioContext()
+      const now = ctx.currentTime
+
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+
+      osc.type = 'triangle'
+      osc.frequency.setValueAtTime(180, now)
+      osc.frequency.exponentialRampToValueAtTime(60, now + 0.06)
+
+      gain.gain.setValueAtTime(0.25, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06)
+
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+
+      osc.start(now)
+      osc.stop(now + 0.06)
+    } catch (_) {}
+  }, [muted])
+
+  // Streak win harmonic chime
+  const playStreakWin = useCallback((streak: number = 1) => {
+    if (muted) return
+    try {
+      const ctx = getAudioContext()
+      const now = ctx.currentTime
+
+      const baseNotes = [440, 554.37, 659.25, 880, 1108.73, 1318.51]
+      const note = baseNotes[(streak - 1) % baseNotes.length]
+
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(note, now)
+      osc.frequency.exponentialRampToValueAtTime(note * 1.5, now + 0.1)
+
+      gain.gain.setValueAtTime(0.2, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25)
+
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+
+      osc.start(now)
+      osc.stop(now + 0.25)
+    } catch (_) {}
+  }, [muted])
+
+  // Ceramic chip placement clink
+  const playChipPlace = useCallback(() => {
+    if (muted) return
+    try {
+      const ctx = getAudioContext()
+      const now = ctx.currentTime
+
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(2400, now)
+      osc.frequency.exponentialRampToValueAtTime(3200, now + 0.03)
+
+      gain.gain.setValueAtTime(0.12, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04)
+
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+
+      osc.start(now)
+      osc.stop(now + 0.04)
+    } catch (_) {}
+  }, [muted])
+
+  // Roulette wheel spinning whir
+  const playWheelSpin = useCallback(() => {
+    if (muted) return
+    try {
+      const ctx = getAudioContext()
+      const now = ctx.currentTime
+
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+
+      osc.type = 'triangle'
+      osc.frequency.setValueAtTime(90, now)
+      osc.frequency.linearRampToValueAtTime(45, now + 1.2)
+
+      gain.gain.setValueAtTime(0.1, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2)
+
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+
+      osc.start(now)
+      osc.stop(now + 1.2)
+    } catch (_) {}
+  }, [muted])
+
+  // Roulette ball rattling & settling clack
+  const playBallDrop = useCallback(() => {
+    if (muted) return
+    try {
+      const ctx = getAudioContext()
+      const now = ctx.currentTime
+
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(950, now)
+      osc.frequency.exponentialRampToValueAtTime(350, now + 0.08)
+
+      gain.gain.setValueAtTime(0.2, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08)
+
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+
+      osc.start(now)
+      osc.stop(now + 0.08)
+    } catch (_) {}
+  }, [muted])
+
+  // Card slide swoosh
+  const playCardSlide = useCallback(() => {
+    if (muted) return
+    try {
+      const ctx = getAudioContext()
+      const now = ctx.currentTime
+
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+
+      osc.type = 'triangle'
+      osc.frequency.setValueAtTime(400, now)
+      osc.frequency.exponentialRampToValueAtTime(150, now + 0.06)
+
+      gain.gain.setValueAtTime(0.12, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06)
+
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+
+      osc.start(now)
+      osc.stop(now + 0.06)
+    } catch (_) {}
+  }, [muted])
+
+  // Card flip snap
+  const playCardFlip = useCallback(() => {
+    if (muted) return
+    try {
+      const ctx = getAudioContext()
+      const now = ctx.currentTime
+
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(600, now)
+      osc.frequency.exponentialRampToValueAtTime(1200, now + 0.04)
+
+      gain.gain.setValueAtTime(0.15, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04)
+
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+
+      osc.start(now)
+      osc.stop(now + 0.04)
+    } catch (_) {}
+  }, [muted])
+
+  // Blackjack win fanfare (Vegas arpeggio)
+  const playBlackjackWin = useCallback((isNaturalBJ: boolean = false) => {
+    if (muted) return
+    try {
+      const ctx = getAudioContext()
+      const now = ctx.currentTime
+
+      const notes = isNaturalBJ
+        ? [523.25, 659.25, 783.99, 1046.5, 1318.51] // C E G C E
+        : [440, 554.37, 659.25, 880] // A C# E A
+
+      notes.forEach((freq, idx) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+
+        osc.type = 'sine'
+        osc.frequency.setValueAtTime(freq, now + idx * 0.07)
+
+        gain.gain.setValueAtTime(0.18, now + idx * 0.07)
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.07 + 0.35)
+
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+
+        osc.start(now + idx * 0.07)
+        osc.stop(now + idx * 0.07 + 0.35)
+      })
+    } catch (_) {}
+  }, [muted])
+
+  // Bust defeat tone
+  const playBust = useCallback(() => {
+    if (muted) return
+    try {
+      const ctx = getAudioContext()
+      const now = ctx.currentTime
+
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+
+      osc.type = 'sawtooth'
+      osc.frequency.setValueAtTime(180, now)
+      osc.frequency.linearRampToValueAtTime(80, now + 0.3)
+
+      gain.gain.setValueAtTime(0.15, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3)
+
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+
+      osc.start(now)
+      osc.stop(now + 0.3)
+    } catch (_) {}
+  }, [muted])
+
   return {
     muted,
     toggleMute,
@@ -226,5 +485,15 @@ export function useAudio() {
     playReelSpin,
     playReelStop,
     playSlotWin,
+    playCoinFlick,
+    playCoinCatch,
+    playStreakWin,
+    playChipPlace,
+    playWheelSpin,
+    playBallDrop,
+    playCardSlide,
+    playCardFlip,
+    playBlackjackWin,
+    playBust,
   }
 }

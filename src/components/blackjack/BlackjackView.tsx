@@ -1,49 +1,178 @@
-import React from 'react'
-import { motion } from 'framer-motion'
-import { Sparkles } from 'lucide-react'
+import React, { useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Shield, AlertCircle, RefreshCw } from 'lucide-react'
+import { useBlackjackStore } from '../../store/blackjackStore'
+import { useAuthStore } from '../../store/authStore'
+import { useAudio } from '../../hooks/useAudio'
+import { BlackjackTable } from './BlackjackTable'
+import { BlackjackControls } from './BlackjackControls'
 
 export const BlackjackView: React.FC = () => {
+  const {
+    bet,
+    status,
+    playerCards,
+    playerScore,
+    dealerCards,
+    dealerScore,
+    payout,
+    isDealing,
+    serverSeedHash,
+    serverSeed,
+    errorMessage,
+    setBet,
+    clearError,
+    deal,
+    hit,
+    stand,
+    double,
+    reset,
+  } = useBlackjackStore()
+
+  const { user } = useAuthStore()
+  const audio = useAudio()
+
+  // Audio reactions on game state change
+  useEffect(() => {
+    if (status === 'WON') {
+      audio.playBlackjackWin(playerScore.isBlackjack)
+    } else if (status === 'LOST' && playerScore.isBust) {
+      audio.playBust()
+    }
+  }, [status, playerScore.isBlackjack, playerScore.isBust])
+
+  const handleDeal = async () => {
+    audio.playCardSlide()
+    const ok = await deal()
+    if (ok) {
+      // Dealt cards slide sound
+      setTimeout(() => audio.playCardSlide(), 150)
+      setTimeout(() => audio.playCardSlide(), 300)
+    }
+  }
+
+  const handleHit = async () => {
+    audio.playCardSlide()
+    await hit()
+  }
+
+  const handleStand = async () => {
+    audio.playCardFlip()
+    await stand()
+  }
+
+  const handleDouble = async () => {
+    audio.playCardSlide()
+    await double()
+  }
+
   return (
-    <div className="w-full flex flex-col items-center justify-center min-h-[460px] p-6 text-center">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="max-w-xl p-8 bg-panel border border-tile-border rounded-3xl shadow-2xl flex flex-col items-center gap-6"
-      >
-        <div className="w-20 h-20 rounded-3xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-4xl shadow-[0_0_30px_rgba(85,214,255,0.2)]">
-          🃏
-        </div>
-
-        <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-full text-xs font-bold mb-3">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>99.5% RTP · VEGAS STRIP RULES</span>
+    <div className="w-full flex flex-col items-center gap-6 py-4 px-3 sm:px-6">
+      {/* Header Info Banner */}
+      <div className="w-full max-w-4xl flex flex-wrap items-center justify-between gap-3 bg-panel/70 backdrop-blur border border-tile-border px-5 py-3 rounded-2xl shadow-md">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-xl shadow-[0_0_15px_rgba(85,214,255,0.2)]">
+            🃏
           </div>
-          <h2 className="text-2xl font-black text-white">Blackjack 21</h2>
-          <p className="text-sm text-text-secondary mt-2">
-            Player vs Dealer card battle featuring 6-deck shoe, natural 3:2 payouts, Hit, Stand, Double Down, and Split strategies with realistic card sliding sound effects.
-          </p>
-        </div>
-
-        <div className="w-full grid grid-cols-3 gap-3 text-left">
-          <div className="p-3 bg-tile/40 border border-tile-border/40 rounded-2xl">
-            <span className="text-xs text-text-secondary block">Natural BJ</span>
-            <span className="text-base font-extrabold text-cyan-400 font-mono">3:2 Payout</span>
-          </div>
-          <div className="p-3 bg-tile/40 border border-tile-border/40 rounded-2xl">
-            <span className="text-xs text-text-secondary block">Dealer Rules</span>
-            <span className="text-base font-extrabold text-white font-mono">Stands on 17</span>
-          </div>
-          <div className="p-3 bg-tile/40 border border-tile-border/40 rounded-2xl">
-            <span className="text-xs text-text-secondary block">Options</span>
-            <span className="text-base font-extrabold text-primary font-mono">Double & Split</span>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-black text-white">Blackjack 21</h2>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/15 text-cyan-400 border border-cyan-500/30">
+                99.5% RTP
+              </span>
+            </div>
+            <p className="text-xs text-text-secondary">
+              Vegas Strip Rules · 6-Deck Shoe · Dealer stands on 17
+            </p>
           </div>
         </div>
 
-        <div className="p-3 bg-tile/20 border border-tile-border/40 rounded-xl text-xs text-text-secondary">
-          Database schema & Aiven PostgreSQL integration prepared. Ready for Next Step activation!
+        <div className="flex items-center gap-3">
+          {user.isGuest ? (
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/30">
+              Guest Demo Mode
+            </span>
+          ) : (
+            <div className="flex items-center gap-1.5 text-xs text-emerald-400">
+              <Shield className="w-3.5 h-3.5" />
+              <span>Provably Fair</span>
+            </div>
+          )}
+
+          {status !== 'IDLE' && status !== 'ACTIVE' && (
+            <button
+              onClick={reset}
+              className="p-1.5 rounded-lg bg-tile border border-tile-border hover:border-text-secondary text-text-secondary hover:text-white transition-colors cursor-pointer"
+              title="New Round"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          )}
         </div>
-      </motion.div>
+      </div>
+
+      {/* Error Alert */}
+      <AnimatePresence>
+        {errorMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="w-full max-w-4xl p-3 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center justify-between text-xs text-red-400"
+          >
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+            <button
+              onClick={clearError}
+              className="px-2 py-0.5 rounded bg-red-500/20 hover:bg-red-500/40 text-red-300 font-bold"
+            >
+              Dismiss
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Felt Casino Table */}
+      <BlackjackTable
+        dealerCards={dealerCards}
+        dealerScore={dealerScore}
+        playerCards={playerCards}
+        playerScore={playerScore}
+        status={status}
+        payout={payout}
+        bet={bet}
+      />
+
+      {/* Controls & Betting Bar */}
+      <BlackjackControls
+        bet={bet}
+        balance={user.balance}
+        status={status}
+        playerCardsCount={playerCards.length}
+        isDealing={isDealing}
+        onBetChange={setBet}
+        onDeal={handleDeal}
+        onHit={handleHit}
+        onStand={handleStand}
+        onDouble={handleDouble}
+      />
+
+      {/* Provably Fair Commitment Footer */}
+      {(serverSeedHash || serverSeed) && (
+        <div className="w-full max-w-4xl p-3 bg-panel/40 border border-tile-border/40 rounded-xl flex flex-col sm:flex-row items-center justify-between text-[11px] text-text-secondary gap-2 font-mono">
+          <div className="flex items-center gap-2 truncate max-w-full">
+            <span className="text-emerald-400 font-bold">SHA256:</span>
+            <span className="truncate">{serverSeedHash || serverSeed}</span>
+          </div>
+          {serverSeed && (
+            <span className="text-emerald-400/80 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+              Verified
+            </span>
+          )}
+        </div>
+      )}
     </div>
   )
 }
