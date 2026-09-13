@@ -216,6 +216,85 @@ export function useAudio() {
     } catch (_) {}
   }, [muted])
 
+  // Coin flick metallic ring
+  const playCoinFlick = useCallback(() => {
+    if (muted) return
+    try {
+      const ctx = getAudioContext()
+      const now = ctx.currentTime
+
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(1400, now)
+      osc.frequency.exponentialRampToValueAtTime(2800, now + 0.05)
+      osc.frequency.exponentialRampToValueAtTime(1800, now + 0.15)
+
+      gain.gain.setValueAtTime(0.2, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3)
+
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+
+      osc.start(now)
+      osc.stop(now + 0.3)
+    } catch (_) {}
+  }, [muted])
+
+  // Coin catch percussive landing
+  const playCoinCatch = useCallback(() => {
+    if (muted) return
+    try {
+      const ctx = getAudioContext()
+      const now = ctx.currentTime
+
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+
+      osc.type = 'triangle'
+      osc.frequency.setValueAtTime(180, now)
+      osc.frequency.exponentialRampToValueAtTime(60, now + 0.06)
+
+      gain.gain.setValueAtTime(0.25, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06)
+
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+
+      osc.start(now)
+      osc.stop(now + 0.06)
+    } catch (_) {}
+  }, [muted])
+
+  // Streak win harmonic chime
+  const playStreakWin = useCallback((streak: number = 1) => {
+    if (muted) return
+    try {
+      const ctx = getAudioContext()
+      const now = ctx.currentTime
+
+      const baseNotes = [440, 554.37, 659.25, 880, 1108.73, 1318.51]
+      const note = baseNotes[(streak - 1) % baseNotes.length]
+
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(note, now)
+      osc.frequency.exponentialRampToValueAtTime(note * 1.5, now + 0.1)
+
+      gain.gain.setValueAtTime(0.2, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25)
+
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+
+      osc.start(now)
+      osc.stop(now + 0.25)
+    } catch (_) {}
+  }, [muted])
+
   return {
     muted,
     toggleMute,
@@ -226,5 +305,8 @@ export function useAudio() {
     playReelSpin,
     playReelStop,
     playSlotWin,
+    playCoinFlick,
+    playCoinCatch,
+    playStreakWin,
   }
 }
