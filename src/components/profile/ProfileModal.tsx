@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { X, User, Mail, Home, Coins, RefreshCw, LogOut, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
+import { User, Mail, Home, Coins, RefreshCw, LogOut, Loader2 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { userApi } from '../../api/user.api'
 import { UserTransaction } from '../../types'
 import { getErrorMessage } from '../../api/client'
 import { useAudio } from '../../hooks/useAudio'
+import { Modal } from '../ui/Modal'
+import { Tabs } from '../ui/Tabs'
+import { Input } from '../ui/Input'
+import { Button } from '../ui/Button'
+import { Alert } from '../ui/Alert'
+import { Badge } from '../ui/Badge'
+import { CurrencyDisplay } from '../ui/CurrencyDisplay'
 
 interface ProfileModalProps {
   isOpen: boolean
@@ -58,8 +64,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
     }
   }, [isOpen, activeTab])
 
-  if (!isOpen) return null
-
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault()
     playClick()
@@ -97,95 +101,68 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="w-full max-w-lg bg-panel border border-tile-border rounded-2xl shadow-2xl p-6 relative overflow-hidden"
-      >
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-text-secondary hover:text-text-primary p-1.5 rounded-lg hover:bg-tile-hover transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
+  const tabs = [
+    { id: 'details', label: 'Account Details' },
+    { id: 'transactions', label: `Transactions (${transactions.length})` },
+  ]
 
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Player Profile"
+      subtitle="Manage your player account credentials and live wallet history"
+      size="lg"
+    >
+      <div className="flex flex-col gap-4 py-2">
         {/* User Header */}
-        <div className="flex items-center gap-3.5 mb-5">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-primary to-emerald-400 flex items-center justify-center text-black font-extrabold text-lg shadow-lg shadow-primary/20">
+        <div className="flex items-center gap-3.5 p-3.5 bg-surface-3/60 border border-border-default rounded-2xl">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-primary to-emerald-400 flex items-center justify-center text-black font-extrabold text-lg shadow-lg shadow-primary/20 flex-shrink-0">
             {user.username.charAt(0).toUpperCase()}
           </div>
-          <div>
+          <div className="flex-1">
             <div className="flex items-center gap-2">
-              <h3 className="text-lg font-bold text-text-primary">{user.username}</h3>
-              <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-primary/20 text-primary border border-primary/30">
-                Verified Account
-              </span>
+              <h3 className="text-base font-black text-text-primary">{user.username}</h3>
+              <Badge variant="primary" size="sm">
+                Verified Player
+              </Badge>
             </div>
-            <p className="text-xs text-text-secondary">{user.email || 'Guest User'}</p>
+            <p className="text-xs text-text-secondary mt-0.5">{user.email || 'Guest Session'}</p>
           </div>
         </div>
 
         {/* Tab Switcher */}
-        <div className="grid grid-cols-2 gap-1.5 p-1 bg-tile rounded-xl border border-tile-border mb-5">
-          <button
-            type="button"
-            onClick={() => {
-              playClick()
-              setActiveTab('details')
-            }}
-            className={`py-2 text-xs font-bold rounded-lg transition-all ${
-              activeTab === 'details'
-                ? 'bg-primary text-black shadow-md shadow-primary/20'
-                : 'text-text-secondary hover:text-text-primary'
-            }`}
-          >
-            👤 Account Details
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              playClick()
-              setActiveTab('transactions')
-            }}
-            className={`py-2 text-xs font-bold rounded-lg transition-all ${
-              activeTab === 'transactions'
-                ? 'bg-primary text-black shadow-md shadow-primary/20'
-                : 'text-text-secondary hover:text-text-primary'
-            }`}
-          >
-            📋 Transactions ({transactions.length})
-          </button>
-        </div>
+        <Tabs
+          items={tabs}
+          activeTab={activeTab}
+          onChange={(val) => {
+            playClick()
+            setActiveTab(val as 'details' | 'transactions')
+          }}
+          size="md"
+        />
 
         {/* Feedback Banners */}
         {errorMsg && (
-          <div className="flex items-center gap-2 p-3 mb-4 rounded-xl bg-accent-red/15 border border-accent-red/40 text-accent-red text-xs">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{errorMsg}</span>
-          </div>
+          <Alert variant="error" onDismiss={() => setErrorMsg(null)}>
+            {errorMsg}
+          </Alert>
         )}
-
         {successMsg && (
-          <div className="flex items-center gap-2 p-3 mb-4 rounded-xl bg-primary/15 border border-primary/40 text-primary text-xs">
-            <CheckCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{successMsg}</span>
-          </div>
+          <Alert variant="success" onDismiss={() => setSuccessMsg(null)}>
+            {successMsg}
+          </Alert>
         )}
 
         {/* TAB 1: DETAILS */}
         {activeTab === 'details' ? (
           <form onSubmit={handleSaveProfile} className="flex flex-col gap-4">
             {/* Balance Card */}
-            <div className="p-4 rounded-xl bg-tile border border-tile-border flex items-center justify-between">
+            <div className="p-4 rounded-2xl bg-surface-3 border border-border-default flex items-center justify-between">
               <div>
-                <span className="text-xs text-text-secondary">Live Server Balance</span>
-                <div className="text-xl font-mono font-extrabold text-primary">
-                  {user.balance.toFixed(2)}{' '}
-                  <span className="text-xs font-sans font-normal text-text-secondary">mineCoin</span>
+                <span className="text-xs text-text-secondary font-medium">Circulating Wallet Balance</span>
+                <div className="mt-0.5">
+                  <CurrencyDisplay amount={user.balance} size="lg" className="text-primary" />
                 </div>
               </div>
               <div className="w-10 h-10 rounded-xl bg-accent-gold/10 border border-accent-gold/30 flex items-center justify-center">
@@ -194,104 +171,92 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
             </div>
 
             {/* Username Input */}
-            <div>
-              <label className="text-xs font-semibold text-text-secondary">Username</label>
-              <div className="relative flex items-center mt-1">
-                <User className="w-4 h-4 text-text-secondary absolute left-3 pointer-events-none" />
-                <input
-                  type="text"
-                  required
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 24))}
-                  className="w-full bg-tile border border-tile-border rounded-xl pl-9 pr-3.5 py-2.5 text-sm text-text-primary focus:outline-none focus:border-primary transition-colors"
-                />
-              </div>
-            </div>
+            <Input
+              label="Username"
+              type="text"
+              required
+              value={username}
+              onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 24))}
+              leftIcon={<User className="w-4 h-4" />}
+            />
 
             {/* Email (Readonly) */}
-            <div>
-              <label className="text-xs font-semibold text-text-secondary">Email Address</label>
-              <div className="relative flex items-center mt-1">
-                <Mail className="w-4 h-4 text-text-secondary absolute left-3 pointer-events-none" />
-                <input
-                  type="email"
-                  disabled
-                  value={user.email}
-                  className="w-full bg-tile/50 border border-tile-border/50 rounded-xl pl-9 pr-3.5 py-2.5 text-sm text-text-secondary cursor-not-allowed"
-                />
-              </div>
-            </div>
+            <Input
+              label="Email Address"
+              type="email"
+              disabled
+              value={user.email}
+              leftIcon={<Mail className="w-4 h-4" />}
+            />
 
             {/* Address */}
-            <div>
-              <label className="text-xs font-semibold text-text-secondary">Residential Address</label>
-              <div className="relative flex items-center mt-1">
-                <Home className="w-4 h-4 text-text-secondary absolute left-3 pointer-events-none" />
-                <input
-                  type="text"
-                  placeholder="Optional address"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  className="w-full bg-tile border border-tile-border rounded-xl pl-9 pr-3.5 py-2.5 text-sm text-text-primary focus:outline-none focus:border-primary transition-colors"
-                />
-              </div>
-            </div>
+            <Input
+              label="Residential Address"
+              type="text"
+              placeholder="City, Country (Optional)"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              leftIcon={<Home className="w-4 h-4" />}
+            />
 
             {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-2.5 pt-2">
-              <button
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <Button
                 type="button"
+                variant="danger"
+                size="lg"
                 onClick={() => {
                   playClick()
                   logout()
                   onClose()
                 }}
-                className="py-2.5 px-4 rounded-xl text-sm font-semibold border border-accent-red/50 text-accent-red hover:bg-accent-red/10 flex items-center justify-center gap-2 transition-all"
+                leftIcon={<LogOut className="w-4 h-4" />}
               >
-                <LogOut className="w-4 h-4" />
                 Log Out
-              </button>
+              </Button>
 
-              <button
+              <Button
                 type="submit"
+                variant="primary"
+                size="lg"
                 disabled={isSaving || username.length < 3}
-                className="py-2.5 px-4 rounded-xl text-sm font-semibold bg-primary hover:bg-primary-hover text-black shadow-lg shadow-primary/20 flex items-center justify-center gap-2 transition-all disabled:opacity-60"
+                isLoading={isSaving}
               >
-                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Changes'}
-              </button>
+                Save Changes
+              </Button>
             </div>
           </form>
         ) : (
           /* TAB 2: TRANSACTIONS */
           <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-text-secondary">Recent Round Transactions</span>
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-semibold text-text-secondary">Recent Ledger Audit</span>
               <button
                 type="button"
                 disabled={isLoadingTx}
                 onClick={fetchTransactions}
-                className="flex items-center gap-1 text-xs text-accent-cyan hover:underline p-1"
+                className="flex items-center gap-1.5 text-primary hover:underline cursor-pointer font-bold"
               >
-                <RefreshCw className={`w-3 h-3 ${isLoadingTx ? 'animate-spin' : ''}`} />
-                Refresh
+                <RefreshCw className={`w-3.5 h-3.5 ${isLoadingTx ? 'animate-spin' : ''}`} />
+                <span>Refresh</span>
               </button>
             </div>
 
             {isLoadingTx && transactions.length === 0 ? (
               <div className="py-12 flex flex-col items-center justify-center text-text-secondary gap-2">
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                <span className="text-xs">Loading history...</span>
+                <span className="text-xs">Fetching ledger audit...</span>
               </div>
             ) : transactions.length === 0 ? (
-              <div className="py-12 flex flex-col items-center justify-center text-center p-6 bg-tile border border-tile-border rounded-xl">
-                <span className="text-3xl mb-2">📜</span>
+              <div className="py-12 flex flex-col items-center justify-center text-center p-6 bg-surface-3 border border-border-default rounded-2xl">
+                <span className="text-3xl mb-2 select-none">📜</span>
                 <span className="text-sm font-semibold text-text-primary">No Transactions Yet</span>
-                <p className="text-xs text-text-secondary mt-1">
-                  Place bets or cash out in the game to see your real-time transaction history here.
+                <p className="text-xs text-text-muted mt-1">
+                  Play rounds across Mines, Slots, Roulette, Blackjack, or Coin Flip to view your verifiable ledger.
                 </p>
               </div>
             ) : (
-              <div className="flex flex-col gap-2 max-h-80 overflow-y-auto pr-1">
+              <div className="flex flex-col gap-2 max-h-80 overflow-y-auto pr-1 no-scrollbar">
                 {transactions.map((tx) => {
                   const isWin = tx.type.toUpperCase() === 'WIN'
                   const isBet = tx.type.toUpperCase() === 'BET'
@@ -299,34 +264,31 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
                   return (
                     <div
                       key={tx.id}
-                      className="p-3 bg-tile border border-tile-border rounded-xl flex items-center justify-between text-xs"
+                      className="p-3 bg-surface-3/80 border border-border-default rounded-xl flex items-center justify-between text-xs shadow-xs"
                     >
                       <div className="flex items-center gap-2.5">
-                        <span
-                          className={`px-2 py-0.5 rounded font-mono font-bold text-[10px] ${
-                            isWin
-                              ? 'bg-primary/20 text-primary border border-primary/30'
-                              : isBet
-                              ? 'bg-accent-red/20 text-accent-red border border-accent-red/30'
-                              : 'bg-accent-gold/20 text-accent-gold'
-                          }`}
+                        <Badge
+                          variant={isWin ? 'success' : isBet ? 'danger' : 'gold'}
+                          size="sm"
                         >
                           {isWin ? 'WIN 🏆' : isBet ? 'BET 🎯' : tx.type}
-                        </span>
+                        </Badge>
 
                         <div className="flex flex-col">
-                          <span className="font-semibold text-text-primary">
-                            {isWin ? 'Game Payout' : isBet ? 'Round Bet' : tx.type}
+                          <span className="font-bold text-text-primary">
+                            {isWin ? 'Game Payout' : isBet ? 'Round Stake' : tx.type}
                           </span>
-                          <span className="text-[10px] text-text-secondary">{formatDateTime(tx.createdAt)}</span>
+                          <span className="text-[10px] text-text-muted font-mono">{formatDateTime(tx.createdAt)}</span>
                         </div>
                       </div>
 
-                      <div className="font-mono font-bold text-sm text-right">
-                        <span className={isWin ? 'text-primary' : isBet ? 'text-accent-red' : 'text-text-primary'}>
-                          {isWin ? `+${tx.amount.toFixed(2)}` : isBet ? `-${tx.amount.toFixed(2)}` : tx.amount.toFixed(2)}
-                        </span>
-                        <span className="text-[10px] text-text-secondary font-sans font-normal ml-1">mineCoin</span>
+                      <div className="text-right">
+                        <CurrencyDisplay
+                          amount={isBet ? -tx.amount : tx.amount}
+                          size="sm"
+                          showSign
+                          coloring
+                        />
                       </div>
                     </div>
                   )
@@ -335,7 +297,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
             )}
           </div>
         )}
-      </motion.div>
-    </div>
+      </div>
+    </Modal>
   )
 }

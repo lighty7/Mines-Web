@@ -1,11 +1,17 @@
 import React from 'react'
-import { motion } from 'framer-motion'
 import { useGameStore } from '../../store/gameStore'
 import { useAuthStore } from '../../store/authStore'
 import { useAudio } from '../../hooks/useAudio'
 import { MinesEngine } from '../../engine/minesEngine'
-import { Bomb, Grid, Coins, Percent, AlertCircle } from 'lucide-react'
+import { Bomb, Grid, Coins, Percent, Play, ArrowDownCircle } from 'lucide-react'
 import confetti from 'canvas-confetti'
+import { Alert } from '../ui/Alert'
+import { Tabs } from '../ui/Tabs'
+import { Input } from '../ui/Input'
+import { QuickBetGrid } from '../ui/QuickBetGrid'
+import { Button } from '../ui/Button'
+import { CurrencyDisplay } from '../ui/CurrencyDisplay'
+import { confettiPresets } from '../../lib/motion'
 
 export const BettingControls: React.FC = () => {
   const {
@@ -50,11 +56,7 @@ export const BettingControls: React.FC = () => {
       const result = await cashout()
       if (result) {
         playCashout()
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 },
-        })
+        confetti(confettiPresets.bigWin)
       }
     } else {
       await startGame()
@@ -67,121 +69,83 @@ export const BettingControls: React.FC = () => {
     setBet(newVal)
   }
 
+  const gridTabs = [
+    { id: '4', label: '4x4' },
+    { id: '5', label: '5x5' },
+    { id: '6', label: '6x6' },
+  ]
+
   return (
-    <div className="w-full flex flex-col gap-4 bg-panel/80 border border-tile-border rounded-2xl p-5 shadow-xl backdrop-blur-md">
-      {/* Error Message Banner */}
+    <div className="w-full flex flex-col gap-4 bg-surface-2/90 border border-border-default rounded-2xl p-5 shadow-xl backdrop-blur-md">
+      {/* Error Alert Banner */}
       {errorMessage && (
-        <div className="flex items-center gap-2 p-3 rounded-xl bg-accent-red/15 border border-accent-red/40 text-accent-red text-xs">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
-          <span className="flex-1">{errorMessage}</span>
-          <button onClick={clearError} className="font-bold hover:opacity-75">
-            ✕
-          </button>
-        </div>
+        <Alert variant="error" onDismiss={clearError}>
+          {errorMessage}
+        </Alert>
       )}
 
       {/* Grid Dimension Tabs */}
       <div className="flex flex-col gap-1.5">
         <label className="text-xs font-semibold text-text-secondary flex items-center gap-1.5">
           <Grid className="w-3.5 h-3.5 text-primary" />
-          Grid Size
+          Grid Dimension
         </label>
-        <div className="grid grid-cols-3 gap-1.5 bg-tile p-1 rounded-xl border border-tile-border">
-          {[4, 5, 6].map((dim) => (
-            <button
-              key={dim}
-              type="button"
-              disabled={isActive || isLoading}
-              onClick={() => {
-                playClick()
-                setGridDimension(dim)
-              }}
-              className={`py-1.5 text-xs font-bold rounded-lg transition-all ${
-                gridDimension === dim
-                  ? 'bg-primary text-black shadow-md shadow-primary/20'
-                  : 'text-text-secondary hover:text-text-primary hover:bg-tile-hover disabled:opacity-50'
-              }`}
-            >
-              {dim}x{dim}
-            </button>
-          ))}
-        </div>
+        <Tabs
+          items={gridTabs}
+          activeTab={String(gridDimension)}
+          onChange={(val) => {
+            if (!isActive && !isLoading) {
+              playClick()
+              setGridDimension(Number(val))
+            }
+          }}
+          size="sm"
+        />
       </div>
 
       {/* Bet Amount Input with Quick Modifiers */}
       <div className="flex flex-col gap-1.5">
-        <div className="flex items-center justify-between">
-          <label className="text-xs font-semibold text-text-secondary flex items-center gap-1.5">
-            <Coins className="w-3.5 h-3.5 text-accent-gold" />
-            Bet Amount (mineCoin)
-          </label>
-          <span className="text-[11px] text-text-secondary">
-            Max: {user.balance.toFixed(2)}
-          </span>
-        </div>
+        <Input
+          label="Bet Amount"
+          labelRight={
+            <div className="flex items-center gap-1 text-[11px] text-text-muted">
+              <span>Balance:</span>
+              <CurrencyDisplay amount={user.balance} size="xs" />
+            </div>
+          }
+          type="number"
+          min="1"
+          max={user.balance}
+          step="1"
+          disabled={isActive || isLoading}
+          value={bet}
+          onChange={(e) => handleBetChange(parseFloat(e.target.value) || 0)}
+          leftIcon={<Coins className="w-4 h-4 text-accent-gold" />}
+          suffix="MC"
+        />
 
-        <div className="relative flex items-center">
-          <input
-            type="number"
-            min="1"
-            max={user.balance}
-            step="1"
-            disabled={isActive || isLoading}
-            value={bet}
-            onChange={(e) => handleBetChange(parseFloat(e.target.value) || 0)}
-            className="w-full bg-tile border border-tile-border rounded-xl px-3.5 py-2.5 text-sm font-mono font-bold text-text-primary focus:outline-none focus:border-primary transition-colors disabled:opacity-60"
-          />
-        </div>
-
-        {/* Quick Multiplier Buttons */}
-        <div className="grid grid-cols-4 gap-1.5 mt-1">
-          <button
-            type="button"
-            disabled={isActive || isLoading}
-            onClick={() => handleBetChange(10)}
-            className="py-1 px-2 text-xs font-semibold rounded-lg bg-tile hover:bg-tile-hover border border-tile-border text-text-secondary hover:text-text-primary transition-all disabled:opacity-50"
-          >
-            10
-          </button>
-          <button
-            type="button"
-            disabled={isActive || isLoading}
-            onClick={() => handleBetChange(Math.max(1, Math.floor(bet / 2)))}
-            className="py-1 px-2 text-xs font-semibold rounded-lg bg-tile hover:bg-tile-hover border border-tile-border text-text-secondary hover:text-text-primary transition-all disabled:opacity-50"
-          >
-            ½
-          </button>
-          <button
-            type="button"
-            disabled={isActive || isLoading}
-            onClick={() => handleBetChange(Math.min(user.balance, bet * 2))}
-            className="py-1 px-2 text-xs font-semibold rounded-lg bg-tile hover:bg-tile-hover border border-tile-border text-text-secondary hover:text-text-primary transition-all disabled:opacity-50"
-          >
-            2×
-          </button>
-          <button
-            type="button"
-            disabled={isActive || isLoading}
-            onClick={() => handleBetChange(user.balance)}
-            className="py-1 px-2 text-xs font-semibold rounded-lg bg-tile hover:bg-tile-hover border border-tile-border text-text-secondary hover:text-text-primary transition-all disabled:opacity-50"
-          >
-            MAX
-          </button>
-        </div>
+        {/* Quick Bet Buttons */}
+        <QuickBetGrid
+          currentBet={bet}
+          balance={user.balance}
+          onBetChange={handleBetChange}
+          presets={[10, 25, 50, 100]}
+          disabled={isActive || isLoading}
+        />
       </div>
 
       {/* Mines Selector */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <label className="text-xs font-semibold text-text-secondary flex items-center gap-1.5">
-            <Bomb className="w-3.5 h-3.5 text-accent-red" />
+            <Bomb className="w-3.5 h-3.5 text-danger" />
             Mines Count
           </label>
           <div className="flex items-center gap-1.5">
-            <span className="px-2 py-0.5 rounded-md bg-accent-red/15 border border-accent-red/30 text-accent-red font-mono font-bold text-xs">
+            <span className="px-2 py-0.5 rounded-md bg-danger/15 border border-danger/30 text-danger font-mono font-bold text-xs">
               {mines} {mines === 1 ? 'Mine' : 'Mines'}
             </span>
-            <span className="text-[11px] text-text-secondary">
+            <span className="text-[11px] text-text-muted">
               ({safeTilesRemaining} Safe)
             </span>
           </div>
@@ -197,7 +161,7 @@ export const BettingControls: React.FC = () => {
               playClick()
               setMines(mines - 1)
             }}
-            className="w-8 h-8 rounded-lg bg-tile hover:bg-tile-hover border border-tile-border flex items-center justify-center font-bold text-base text-text-secondary hover:text-text-primary active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none flex-shrink-0"
+            className="w-8 h-8 rounded-lg bg-surface-3 hover:bg-surface-hover border border-border-default flex items-center justify-center font-bold text-base text-text-secondary hover:text-text-primary active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none flex-shrink-0 cursor-pointer"
           >
             -
           </button>
@@ -214,7 +178,7 @@ export const BettingControls: React.FC = () => {
                 background: `linear-gradient(to right, #18C964 0%, #F5C451 ${Math.min(
                   ((mines - 1) / (maxMines - 1)) * 100,
                   60
-                )}%, #F04444 ${((mines - 1) / (maxMines - 1)) * 100}%, #2A303C ${
+                )}%, #EF4444 ${((mines - 1) / (maxMines - 1)) * 100}%, #2A303C ${
                   ((mines - 1) / (maxMines - 1)) * 100
                 }%, #2A303C 100%)`,
               }}
@@ -234,12 +198,12 @@ export const BettingControls: React.FC = () => {
               playClick()
               setMines(mines + 1)
             }}
-            className="w-8 h-8 rounded-lg bg-tile hover:bg-tile-hover border border-tile-border flex items-center justify-center font-bold text-base text-text-secondary hover:text-text-primary active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none flex-shrink-0"
+            className="w-8 h-8 rounded-lg bg-surface-3 hover:bg-surface-hover border border-border-default flex items-center justify-center font-bold text-base text-text-secondary hover:text-text-primary active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none flex-shrink-0 cursor-pointer"
           >
             +
           </button>
 
-          <div className="w-10 h-8 rounded-lg bg-tile border border-primary/50 flex items-center justify-center font-mono font-bold text-xs text-primary flex-shrink-0 shadow-inner">
+          <div className="w-10 h-8 rounded-lg bg-surface-3 border border-primary/50 flex items-center justify-center font-mono font-bold text-xs text-primary flex-shrink-0 shadow-inner">
             {mines}
           </div>
         </div>
@@ -255,10 +219,10 @@ export const BettingControls: React.FC = () => {
                 playClick()
                 setMines(preset)
               }}
-              className={`py-1 text-[11px] font-mono font-bold rounded-lg border transition-all ${
+              className={`py-1 text-[11px] font-mono font-bold rounded-lg border transition-all cursor-pointer ${
                 mines === preset
-                  ? 'bg-accent-red/20 border-accent-red/60 text-accent-red shadow-sm'
-                  : 'bg-tile hover:bg-tile-hover border-tile-border text-text-secondary hover:text-text-primary disabled:opacity-50'
+                  ? 'bg-danger/20 border-danger/60 text-danger shadow-sm'
+                  : 'bg-surface-3 hover:bg-surface-hover border-border-default text-text-secondary hover:text-text-primary disabled:opacity-50'
               }`}
             >
               {preset === maxMines ? 'MAX' : `${preset}💣`}
@@ -268,28 +232,28 @@ export const BettingControls: React.FC = () => {
       </div>
 
       {/* Probability & Multiplier Stats Widget */}
-      <div className="p-3 rounded-xl bg-tile border border-tile-border flex flex-col gap-2 shadow-inner">
+      <div className="p-3.5 rounded-xl bg-surface-3 border border-border-default flex flex-col gap-2 shadow-inner">
         <div className="flex items-center justify-between text-xs">
           <span className="text-text-secondary flex items-center gap-1">
             <Percent className="w-3.5 h-3.5 text-primary" />
-            Safe / Mine Chance
+            Safe / Mine Odds
           </span>
           <span className="font-mono text-xs font-bold">
             <span className="text-primary">{safeChance.toFixed(1)}%</span>
-            <span className="text-text-secondary mx-1">/</span>
-            <span className="text-accent-red">{mineChance.toFixed(1)}%</span>
+            <span className="text-text-muted mx-1">/</span>
+            <span className="text-danger">{mineChance.toFixed(1)}%</span>
           </span>
         </div>
 
         <div className="flex items-center justify-between text-xs">
           <span className="text-text-secondary">Next Multiplier</span>
           <span className="font-mono font-bold text-accent-gold">
-            {nextMultiplier.toFixed(2)}x ({nextPayout.toFixed(2)} mineCoin)
+            {nextMultiplier.toFixed(2)}x ({nextPayout.toFixed(2)} MC)
           </span>
         </div>
 
         {isActive && (
-          <div className="flex items-center justify-between text-xs pt-1 border-t border-tile-border/40">
+          <div className="flex items-center justify-between text-xs pt-1 border-t border-border-subtle">
             <span className="text-text-secondary">Safe Remaining</span>
             <span className="font-mono font-bold text-text-primary">{safeTilesRemaining}</span>
           </div>
@@ -297,40 +261,40 @@ export const BettingControls: React.FC = () => {
       </div>
 
       {/* Main Action Button (BET / CASHOUT) */}
-      <motion.button
-        type="button"
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        disabled={isLoading || (isActive && revealedCount === 0)}
-        onClick={handleStartOrCashout}
-        className={`w-full py-3.5 px-4 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2 shadow-xl ${
-          isActive
-            ? revealedCount > 0
-              ? 'bg-gradient-to-r from-accent-gold via-amber-400 to-accent-gold text-black shadow-accent-gold/25 hover:brightness-105 animate-pulse-glow'
-              : 'bg-tile border border-tile-border text-text-secondary cursor-not-allowed opacity-80'
-            : 'bg-primary hover:bg-primary-hover text-black shadow-primary/25'
-        }`}
-      >
-        {isLoading ? (
-          <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-        ) : isActive ? (
-          revealedCount > 0 ? (
+      {isActive ? (
+        <Button
+          variant={revealedCount > 0 ? 'gold' : 'secondary'}
+          size="xl"
+          fullWidth
+          disabled={isLoading || revealedCount === 0}
+          onClick={handleStartOrCashout}
+          isLoading={isLoading}
+          leftIcon={revealedCount > 0 ? <ArrowDownCircle className="w-5 h-5" /> : undefined}
+        >
+          {revealedCount > 0 ? (
             <div className="flex flex-col items-center leading-none">
               <span className="text-xs uppercase tracking-wider font-extrabold">CASHOUT</span>
               <span className="text-base font-mono font-black mt-0.5">
-                {potentialWin.toFixed(2)} mineCoin ({multiplier.toFixed(2)}x)
+                {potentialWin.toFixed(2)} MC ({multiplier.toFixed(2)}x)
               </span>
             </div>
           ) : (
             <span>SELECT A TILE</span>
-          )
-        ) : (
-          <div className="flex items-center gap-2">
-            <span>START GAME</span>
-            <span className="text-xs font-mono font-normal opacity-80">({bet} mineCoin)</span>
-          </div>
-        )}
-      </motion.button>
+          )}
+        </Button>
+      ) : (
+        <Button
+          variant="primary"
+          size="xl"
+          fullWidth
+          disabled={isLoading || user.balance < bet}
+          onClick={handleStartOrCashout}
+          isLoading={isLoading}
+          leftIcon={<Play className="w-5 h-5 fill-current" />}
+        >
+          <span>START GAME ({bet} MC)</span>
+        </Button>
+      )}
     </div>
   )
 }

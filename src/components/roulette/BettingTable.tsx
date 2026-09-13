@@ -24,10 +24,20 @@ export const BettingTable: React.FC<BettingTableProps> = ({
     return bet ? bet.amount : 0
   }
 
+  const renderChipBadge = (amount: number) => {
+    if (amount <= 0) return null
+    return (
+      <motion.div
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-accent-gold text-black font-mono font-black text-[9px] flex items-center justify-center shadow-lg border border-white z-10 select-none"
+      >
+        {amount}
+      </motion.div>
+    )
+  }
+
   // Numbers arranged in 12 columns of 3 rows:
-  // Row 1: 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36
-  // Row 2: 2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35
-  // Row 3: 1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34
   const row1 = [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36]
   const row2 = [2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35]
   const row3 = [1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34]
@@ -39,47 +49,35 @@ export const BettingTable: React.FC<BettingTableProps> = ({
     return (
       <button
         key={num}
+        type="button"
         disabled={disabled}
         onClick={() => onPlaceBet('STRAIGHT', [num])}
-        className={`relative h-10 sm:h-12 border border-tile-border/70 rounded-md font-mono font-extrabold text-xs sm:text-sm flex items-center justify-center transition-all ${
+        className={`relative h-10 sm:h-12 border border-border-default rounded-md font-mono font-black text-xs sm:text-sm flex items-center justify-center transition-all cursor-pointer select-none ${
           isRed
-            ? 'bg-rose-600/80 hover:bg-rose-500 text-white'
-            : 'bg-zinc-900/90 hover:bg-zinc-800 text-white'
+            ? 'bg-rose-600/85 hover:bg-rose-500 text-white'
+            : 'bg-surface-3 hover:bg-surface-hover text-white'
         }`}
       >
         <span>{num}</span>
-
-        {/* Placed Chip Badge */}
-        {amount > 0 && (
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-yellow-400 text-black font-mono font-black text-[9px] flex items-center justify-center shadow-lg border border-white z-10"
-          >
-            {amount}
-          </motion.div>
-        )}
+        {renderChipBadge(amount)}
       </button>
     )
   }
 
   return (
-    <div className="w-full bg-[#111915] border-2 border-emerald-900/60 rounded-3xl p-3 sm:p-5 shadow-2xl flex flex-col gap-2 overflow-x-auto select-none">
+    <div className="w-full bg-surface-2/80 border border-border-default rounded-3xl p-3 sm:p-5 shadow-2xl flex flex-col gap-2 overflow-x-auto select-none backdrop-blur-md">
       {/* Table Grid */}
       <div className="flex min-w-[580px] gap-1.5">
         {/* Zero Column (Left) */}
         <div className="flex flex-col w-12 sm:w-14">
           <button
+            type="button"
             disabled={disabled}
             onClick={() => onPlaceBet('STRAIGHT', [0])}
-            className="relative flex-1 bg-emerald-600/90 hover:bg-emerald-500 border border-tile-border/70 rounded-md flex flex-col items-center justify-center text-white font-mono font-black text-sm sm:text-base transition-all"
+            className="relative flex-1 bg-emerald-600/90 hover:bg-emerald-500 border border-border-default rounded-md flex flex-col items-center justify-center text-white font-mono font-black text-sm sm:text-base transition-all cursor-pointer"
           >
             <span>0</span>
-            {getBetOnNumbers([0]) > 0 && (
-              <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-yellow-400 text-black font-mono font-black text-[9px] flex items-center justify-center shadow-lg border border-white z-10">
-                {getBetOnNumbers([0])}
-              </div>
-            )}
+            {renderChipBadge(getBetOnNumbers([0]))}
           </button>
         </div>
 
@@ -100,16 +98,13 @@ export const BettingTable: React.FC<BettingTableProps> = ({
             return (
               <button
                 key={idx}
+                type="button"
                 disabled={disabled}
                 onClick={() => onPlaceBet('COLUMN', r)}
-                className="relative h-10 sm:h-12 bg-tile/70 hover:bg-tile border border-tile-border/70 rounded-md font-mono font-bold text-[10px] sm:text-xs text-text-secondary hover:text-white flex items-center justify-center transition-all"
+                className="relative h-10 sm:h-12 bg-surface-3 hover:bg-surface-hover border border-border-default rounded-md font-mono font-bold text-[10px] sm:text-xs text-text-secondary hover:text-white flex items-center justify-center transition-all cursor-pointer"
               >
                 <span>2:1</span>
-                {amount > 0 && (
-                  <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-yellow-400 text-black font-mono font-black text-[9px] flex items-center justify-center shadow-lg border border-white z-10">
-                    {amount}
-                  </div>
-                )}
+                {renderChipBadge(amount)}
               </button>
             )
           })}
@@ -127,16 +122,13 @@ export const BettingTable: React.FC<BettingTableProps> = ({
           return (
             <button
               key={i}
+              type="button"
               disabled={disabled}
               onClick={() => onPlaceBet('DOZEN', d.nums)}
-              className="relative flex-1 py-2 bg-tile/70 hover:bg-tile border border-tile-border/70 rounded-md text-xs font-bold text-text-secondary hover:text-white uppercase transition-all"
+              className="relative flex-1 py-2 bg-surface-3 hover:bg-surface-hover border border-border-default rounded-md text-xs font-bold text-text-secondary hover:text-white uppercase transition-all cursor-pointer"
             >
               <span>{d.label}</span>
-              {amount > 0 && (
-                <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-yellow-400 text-black font-mono font-black text-[9px] flex items-center justify-center shadow-lg border border-white z-10">
-                  {amount}
-                </div>
-              )}
+              {renderChipBadge(amount)}
             </button>
           )
         })}
@@ -159,22 +151,19 @@ export const BettingTable: React.FC<BettingTableProps> = ({
           return (
             <button
               key={i}
+              type="button"
               disabled={disabled}
               onClick={() => onPlaceBet(item.type, item.nums)}
-              className={`relative flex-1 py-2.5 rounded-md text-xs font-black uppercase transition-all border ${
+              className={`relative flex-1 py-2.5 rounded-md text-xs font-black uppercase transition-all border cursor-pointer ${
                 isRed
-                  ? 'bg-rose-600/80 hover:bg-rose-500 border-rose-500/60 text-white'
+                  ? 'bg-rose-600/85 hover:bg-rose-500 border-rose-500/60 text-white'
                   : isBlack
-                  ? 'bg-zinc-900 hover:bg-zinc-800 border-zinc-700 text-white'
-                  : 'bg-tile/70 hover:bg-tile border-tile-border/70 text-text-secondary hover:text-white'
+                  ? 'bg-zinc-900 hover:bg-zinc-800 border-border-default text-white'
+                  : 'bg-surface-3 hover:bg-surface-hover border-border-default text-text-secondary hover:text-white'
               }`}
             >
               <span>{item.label}</span>
-              {amount > 0 && (
-                <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-yellow-400 text-black font-mono font-black text-[9px] flex items-center justify-center shadow-lg border border-white z-10">
-                  {amount}
-                </div>
-              )}
+              {renderChipBadge(amount)}
             </button>
           )
         })}

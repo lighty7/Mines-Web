@@ -1,6 +1,7 @@
 import React from 'react'
-import { motion } from 'framer-motion'
-import { X, HelpCircle, ShieldCheck, Sparkles, AlertTriangle } from 'lucide-react'
+import { ShieldCheck } from 'lucide-react'
+import { Modal } from '../ui/Modal'
+import { Button } from '../ui/Button'
 
 interface HowToPlayModalProps {
   isOpen: boolean
@@ -8,83 +9,85 @@ interface HowToPlayModalProps {
 }
 
 export const HowToPlayModal: React.FC<HowToPlayModalProps> = ({ isOpen, onClose }) => {
-  if (!isOpen) return null
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="w-full max-w-lg bg-panel border border-tile-border rounded-2xl shadow-2xl p-6 relative overflow-hidden flex flex-col gap-4 text-xs text-text-secondary"
-      >
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-text-secondary hover:text-text-primary p-1.5 rounded-lg hover:bg-tile-hover transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/30 flex items-center justify-center text-primary">
-            <HelpCircle className="w-5 h-5" />
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Casino Game Rules & Guidelines"
+      subtitle="Complete rules, provable fairness, and guidelines across all 5 games"
+      size="lg"
+    >
+      <div className="flex flex-col gap-3 py-2 text-xs text-text-secondary">
+        <div className="p-3.5 bg-surface-3/80 border border-border-default rounded-xl flex flex-col gap-1.5">
+          <div className="flex items-center gap-2 text-text-primary font-bold">
+            <span className="text-base select-none">💣</span>
+            <span>1. Mines (99.0% RTP)</span>
           </div>
-          <div>
-            <h3 className="text-base font-bold text-text-primary">How to Play Mines</h3>
-            <p className="text-[11px] text-text-secondary">Game rules, odds, and keyboard hotkeys</p>
-          </div>
+          <p className="leading-relaxed">
+            Configure your grid size (4x4, 5x5, 6x6) and mines count (1 to MAX). Each safe diamond revealed compounds your multiplier. Cash out at any time or press Space to bank your winnings!
+          </p>
         </div>
 
-        <div className="flex flex-col gap-3">
-          <div className="p-3.5 bg-tile border border-tile-border rounded-xl flex flex-col gap-1.5">
-            <div className="flex items-center gap-2 text-text-primary font-bold">
-              <Sparkles className="w-4 h-4 text-primary" />
-              1. Choose Bet & Mines
-            </div>
-            <p>
-              Select your bet in mineCoin and configure the number of hidden mines (1 to 24). More mines equal exponentially higher multipliers per revealed diamond!
-            </p>
+        <div className="p-3.5 bg-surface-3/80 border border-border-default rounded-xl flex flex-col gap-1.5">
+          <div className="flex items-center gap-2 text-text-primary font-bold">
+            <span className="text-base select-none">🎰</span>
+            <span>2. Neon Rush Slots (96.5% RTP)</span>
           </div>
-
-          <div className="p-3.5 bg-tile border border-tile-border rounded-xl flex flex-col gap-1.5">
-            <div className="flex items-center gap-2 text-text-primary font-bold">
-              <span className="text-sm">💎</span>
-              2. Reveal Safe Gems
-            </div>
-            <p>
-              Click any hidden tile on the grid. If it reveals a Diamond, your multiplier increases and you can cash out at any time!
-            </p>
-          </div>
-
-          <div className="p-3.5 bg-tile border border-tile-border rounded-xl flex flex-col gap-1.5">
-            <div className="flex items-center gap-2 text-text-primary font-bold">
-              <AlertTriangle className="w-4 h-4 text-accent-red" />
-              3. Avoid the Bombs
-            </div>
-            <p>
-              If you tap a tile containing a Mine, it explodes and the round ends. Cash out whenever you are satisfied with your accumulated profit!
-            </p>
-          </div>
-
-          <div className="p-3.5 bg-tile border border-tile-border rounded-xl flex flex-col gap-1.5">
-            <div className="flex items-center gap-2 text-text-primary font-bold">
-              <ShieldCheck className="w-4 h-4 text-accent-gold" />
-              4. Fair Play & Multipliers
-            </div>
-            <p>
-              Every game round is calculated with a transparent 99% Return-to-Player (RTP) rate based on standard combinatorial probability.
-            </p>
-          </div>
+          <p className="leading-relaxed">
+            5-reel, 20-payline video slot. Wild symbols (⚡) substitute for any standard symbol with up to 750× line win. 3 or more Stars (⭐) trigger 10–25 Free Spins with automatic multiplier boost.
+          </p>
         </div>
 
-        <button
+        <div className="p-3.5 bg-surface-3/80 border border-border-default rounded-xl flex flex-col gap-1.5">
+          <div className="flex items-center gap-2 text-text-primary font-bold">
+            <span className="text-base select-none">🎡</span>
+            <span>3. European Roulette (97.3% RTP)</span>
+          </div>
+          <p className="leading-relaxed">
+            Single-zero 37-pocket wheel (0 to 36). Place Straight bets (35:1), Columns/Dozens (2:1), or outside 1:1 bets (Red/Black, Odd/Even, 1-18/19-36). The wheel uses realistic landing physics.
+          </p>
+        </div>
+
+        <div className="p-3.5 bg-surface-3/80 border border-border-default rounded-xl flex flex-col gap-1.5">
+          <div className="flex items-center gap-2 text-text-primary font-bold">
+            <span className="text-base select-none">🃏</span>
+            <span>4. Blackjack 21 (99.5% RTP)</span>
+          </div>
+          <p className="leading-relaxed">
+            Classic player vs dealer 21 from a 6-deck shoe. Natural Blackjack pays 3:2. Dealer stands on 17. Use Hit, Stand, or Double Down on initial two-card hands.
+          </p>
+        </div>
+
+        <div className="p-3.5 bg-surface-3/80 border border-border-default rounded-xl flex flex-col gap-1.5">
+          <div className="flex items-center gap-2 text-text-primary font-bold">
+            <span className="text-base select-none">🪙</span>
+            <span>5. Coin Flip Streak Ladder (98.0% RTP)</span>
+          </div>
+          <p className="leading-relaxed">
+            Guess Heads or Tails to climb the compounding streak ladder. Consecutive correct flips multiply your payout up to 8 levels. Cash out at any stage of the streak!
+          </p>
+        </div>
+
+        <div className="p-3.5 bg-surface-3/80 border border-border-default rounded-xl flex flex-col gap-1.5">
+          <div className="flex items-center gap-2 text-text-primary font-bold">
+            <ShieldCheck className="w-4 h-4 text-accent-gold" />
+            <span>Cryptographic Provable Fairness</span>
+          </div>
+          <p className="leading-relaxed">
+            Every round generates a SHA-256 hash commitment before play begins, guaranteeing the outcome is predetermined, unmanipulated, and mathematically verifiable.
+          </p>
+        </div>
+
+        <Button
+          variant="primary"
+          size="lg"
+          fullWidth
           onClick={onClose}
-          className="w-full py-2.5 rounded-xl font-bold bg-tile hover:bg-tile-hover border border-tile-border text-text-primary transition-all text-xs mt-1"
+          className="mt-2"
         >
           Got It, Let's Play!
-        </button>
-      </motion.div>
-    </div>
+        </Button>
+      </div>
+    </Modal>
   )
 }

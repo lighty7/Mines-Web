@@ -18,6 +18,7 @@ interface RouletteState {
   errorMessage: string | null
 
   setSelectedChip: (amount: number) => void
+  setIsSpinning: (spinning: boolean) => void
   placeBet: (type: RouletteBetType, numbers: number[]) => void
   clearBets: () => void
   undoBet: () => void
@@ -45,6 +46,7 @@ export const useRouletteStore = create<RouletteState>((set, get) => ({
   errorMessage: null,
 
   setSelectedChip: (chip: number) => set({ selectedChip: chip }),
+  setIsSpinning: (spinning: boolean) => set({ isSpinning: spinning }),
 
   placeBet: (type: RouletteBetType, numbers: number[]) => {
     if (get().isSpinning) return

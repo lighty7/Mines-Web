@@ -3,10 +3,12 @@ import { SlotMachine } from './SlotMachine'
 import { SlotControls } from './SlotControls'
 import { PaytableModal } from './PaytableModal'
 import { useSlotStore } from '../../store/slotStore'
-import { Keyboard } from 'lucide-react'
+import { useAuthStore } from '../../store/authStore'
+import { GameLayout } from '../layout/GameLayout'
 
 export const SlotsView: React.FC = () => {
   const { spin, isSpinning } = useSlotStore()
+  const { user } = useAuthStore()
   const [paytableOpen, setPaytableOpen] = useState(false)
 
   const handleSpinRequest = useCallback(async () => {
@@ -34,34 +36,22 @@ export const SlotsView: React.FC = () => {
 
   return (
     <div className="w-full">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Panel: Slot Betting Controls */}
-        <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-4">
+      <GameLayout
+        icon="🎰"
+        title="Neon Rush Slots"
+        subtitle="5x3 Video Slot · 20 Fixed Paylines · Wilds & Free Spins"
+        rtp="96.5% RTP"
+        isGuest={user.isGuest}
+        hotkeyHint="Space: Spin Reels"
+        accentColor="#F59E0B"
+        controls={
           <SlotControls
             onSpin={handleSpinRequest}
             onOpenPaytable={() => setPaytableOpen(true)}
           />
-
-          {/* Quick Keyboard Hotkey Pill */}
-          <div className="hidden sm:flex items-center justify-between px-4 py-2.5 bg-panel/50 border border-tile-border/50 rounded-xl text-xs text-text-secondary">
-            <div className="flex items-center gap-2">
-              <Keyboard className="w-3.5 h-3.5 text-primary" />
-              <span>Hotkey:</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <kbd className="px-2 py-0.5 bg-tile border border-tile-border rounded text-[10px] font-mono text-text-primary font-bold shadow-sm">
-                Space
-              </kbd>
-              <span className="text-[11px]">Spin Reels</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Panel: Slot Machine 5-Reels */}
-        <div className="lg:col-span-7 xl:col-span-8 flex flex-col items-center justify-center min-h-[460px]">
-          <SlotMachine onSpinRequest={handleSpinRequest} />
-        </div>
-      </div>
+        }
+        playArea={<SlotMachine onSpinRequest={handleSpinRequest} />}
+      />
 
       <PaytableModal isOpen={paytableOpen} onClose={() => setPaytableOpen(false)} />
     </div>
