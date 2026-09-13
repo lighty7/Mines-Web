@@ -1,3 +1,5 @@
+export type CasinoGame = 'mines' | 'slots' | 'roulette' | 'blackjack' | 'coinflip'
+
 export type GameState = 'IDLE' | 'ACTIVE' | 'WON' | 'LOST'
 
 export type TileState = 'HIDDEN' | 'REVEALING' | 'SAFE' | 'MINE'
