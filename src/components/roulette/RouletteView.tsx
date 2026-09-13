@@ -1,49 +1,150 @@
-import React from 'react'
-import { motion } from 'framer-motion'
-import { Sparkles } from 'lucide-react'
+import React, { useCallback } from 'react'
+import confetti from 'canvas-confetti'
+import { RouletteWheel } from './RouletteWheel'
+import { BettingTable } from './BettingTable'
+import { ChipSelector } from './ChipSelector'
+import { useRouletteStore } from '../../store/rouletteStore'
+import { useAudio } from '../../hooks/useAudio'
+import { RouletteBetType } from '../../types/roulette'
+import { AlertCircle, Trophy, History } from 'lucide-react'
 
 export const RouletteView: React.FC = () => {
+  const {
+    placedBets,
+    isSpinning,
+    winningNumber,
+    winningColor,
+    lastPayout,
+    lastMultiplier,
+    history,
+    errorMessage,
+    clearError,
+    placeBet,
+    spin,
+  } = useRouletteStore()
+
+  const { playWheelSpin, playBallDrop, playSlotWin, playChipPlace } = useAudio()
+
+  const handlePlaceBet = useCallback(
+    (type: RouletteBetType, numbers: number[]) => {
+      playChipPlace()
+      placeBet(type, numbers)
+    },
+    [placeBet, playChipPlace]
+  )
+
+  const handleSpin = async () => {
+    playWheelSpin()
+    const res = await spin()
+    if (!res) return
+
+    // Staggered ball drop
+    setTimeout(() => {
+      playBallDrop()
+      if (res.payout > 0) {
+        playSlotWin(res.multiplier)
+        if (res.multiplier >= 5) {
+          confetti({
+            particleCount: 120,
+            spread: 80,
+            origin: { y: 0.55 },
+          })
+        }
+      }
+      useRouletteStore.setState({ isSpinning: false })
+    }, 3500)
+  }
+
   return (
-    <div className="w-full flex flex-col items-center justify-center min-h-[460px] p-6 text-center">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="max-w-xl p-8 bg-panel border border-tile-border rounded-3xl shadow-2xl flex flex-col items-center gap-6"
-      >
-        <div className="w-20 h-20 rounded-3xl bg-primary/10 border border-primary/30 flex items-center justify-center text-4xl shadow-[0_0_30px_rgba(24,201,100,0.2)]">
-          🎡
+    <div className="w-full flex flex-col items-center gap-6">
+      {/* Error notification */}
+      {errorMessage && (
+        <div className="w-full max-w-4xl p-3.5 bg-red-500/10 border border-red-500/30 rounded-2xl flex items-center justify-between text-xs text-red-300">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+          <button onClick={clearError} className="text-xs font-bold underline">
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {/* Top Recent History Bar */}
+      <div className="w-full max-w-4xl px-4 py-2 bg-panel/70 border border-tile-border/60 rounded-2xl flex items-center justify-between shadow-md">
+        <div className="flex items-center gap-2 text-xs text-text-secondary">
+          <History className="w-3.5 h-3.5" />
+          <span className="font-bold">RECENT NUMBERS:</span>
         </div>
 
-        <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/20 text-primary border border-primary/30 rounded-full text-xs font-bold mb-3">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>EUROPEAN SINGLE-ZERO (37 POCKETS)</span>
-          </div>
-          <h2 className="text-2xl font-black text-white">European Roulette</h2>
-          <p className="text-sm text-text-secondary mt-2">
-            Classic 97.3% RTP table gaming with interactive chip betting felt, 35:1 straight-up payouts, and smooth animated physics wheel spinning.
-          </p>
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+          {history.map((h, idx) => (
+            <div
+              key={idx}
+              className={`w-7 h-7 rounded-lg font-mono font-black text-xs flex items-center justify-center text-white border ${
+                h.color === 'GREEN'
+                  ? 'bg-emerald-600 border-emerald-400'
+                  : h.color === 'RED'
+                  ? 'bg-rose-600 border-rose-400'
+                  : 'bg-zinc-900 border-zinc-700'
+              }`}
+            >
+              {h.number}
+            </div>
+          ))}
         </div>
+      </div>
 
-        <div className="w-full grid grid-cols-3 gap-3 text-left">
-          <div className="p-3 bg-tile/40 border border-tile-border/40 rounded-2xl">
-            <span className="text-xs text-text-secondary block">Straight Up</span>
-            <span className="text-base font-extrabold text-primary font-mono">35:1 Payout</span>
-          </div>
-          <div className="p-3 bg-tile/40 border border-tile-border/40 rounded-2xl">
-            <span className="text-xs text-text-secondary block">Red / Black</span>
-            <span className="text-base font-extrabold text-white font-mono">1:1 Even</span>
-          </div>
-          <div className="p-3 bg-tile/40 border border-tile-border/40 rounded-2xl">
-            <span className="text-xs text-text-secondary block">Dozens / Cols</span>
-            <span className="text-base font-extrabold text-yellow-400 font-mono">2:1 Payout</span>
-          </div>
-        </div>
+      {/* Main Roulette Layout: Left Wheel + Right Status / Win Banner */}
+      <div className="w-full max-w-4xl flex flex-col md:flex-row items-center justify-center gap-8 py-2">
+        <RouletteWheel
+          isSpinning={isSpinning}
+          winningNumber={winningNumber}
+          winningColor={winningColor}
+        />
 
-        <div className="p-3 bg-tile/20 border border-tile-border/40 rounded-xl text-xs text-text-secondary">
-          Database schema & Aiven PostgreSQL integration prepared. Ready for Next Step activation!
+        {/* Win Banner / Instructions */}
+        <div className="flex flex-col items-center md:items-start text-center md:text-left gap-2 max-w-xs">
+          {lastPayout > 0 && !isSpinning ? (
+            <div className="p-4 bg-primary/10 border border-primary/40 rounded-2xl flex flex-col gap-1 w-full">
+              <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase">
+                <Trophy className="w-4 h-4" />
+                <span>WINNER! Payout Credited</span>
+              </div>
+              <span className="text-2xl font-black font-mono text-primary">
+                +{lastPayout.toFixed(2)} mineCoins
+              </span>
+              <span className="text-xs text-text-secondary">
+                {lastMultiplier}× Return on winning bets
+              </span>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-bold text-text-secondary uppercase tracking-wider">
+                European Single-Zero
+              </span>
+              <h3 className="text-lg font-extrabold text-white">Select Chips & Place Bets</h3>
+              <p className="text-xs text-text-secondary">
+                Click on numbers (35:1), dozens (2:1), columns, or red/black (1:1), then click SPIN!
+              </p>
+            </div>
+          )}
         </div>
-      </motion.div>
+      </div>
+
+      {/* Interactive Betting Felt Table */}
+      <div className="w-full max-w-4xl">
+        <BettingTable
+          placedBets={placedBets}
+          onPlaceBet={handlePlaceBet}
+          disabled={isSpinning}
+        />
+      </div>
+
+      {/* Chips Palette & Controls */}
+      <div className="w-full max-w-4xl">
+        <ChipSelector onSpin={handleSpin} />
+      </div>
     </div>
   )
 }

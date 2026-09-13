@@ -295,6 +295,81 @@ export function useAudio() {
     } catch (_) {}
   }, [muted])
 
+  // Ceramic chip placement clink
+  const playChipPlace = useCallback(() => {
+    if (muted) return
+    try {
+      const ctx = getAudioContext()
+      const now = ctx.currentTime
+
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(2400, now)
+      osc.frequency.exponentialRampToValueAtTime(3200, now + 0.03)
+
+      gain.gain.setValueAtTime(0.12, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04)
+
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+
+      osc.start(now)
+      osc.stop(now + 0.04)
+    } catch (_) {}
+  }, [muted])
+
+  // Roulette wheel spinning whir
+  const playWheelSpin = useCallback(() => {
+    if (muted) return
+    try {
+      const ctx = getAudioContext()
+      const now = ctx.currentTime
+
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+
+      osc.type = 'triangle'
+      osc.frequency.setValueAtTime(90, now)
+      osc.frequency.linearRampToValueAtTime(45, now + 1.2)
+
+      gain.gain.setValueAtTime(0.1, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2)
+
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+
+      osc.start(now)
+      osc.stop(now + 1.2)
+    } catch (_) {}
+  }, [muted])
+
+  // Roulette ball rattling & settling clack
+  const playBallDrop = useCallback(() => {
+    if (muted) return
+    try {
+      const ctx = getAudioContext()
+      const now = ctx.currentTime
+
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(950, now)
+      osc.frequency.exponentialRampToValueAtTime(350, now + 0.08)
+
+      gain.gain.setValueAtTime(0.2, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08)
+
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+
+      osc.start(now)
+      osc.stop(now + 0.08)
+    } catch (_) {}
+  }, [muted])
+
   return {
     muted,
     toggleMute,
@@ -308,5 +383,8 @@ export function useAudio() {
     playCoinFlick,
     playCoinCatch,
     playStreakWin,
+    playChipPlace,
+    playWheelSpin,
+    playBallDrop,
   }
 }
