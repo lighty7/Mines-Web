@@ -2,13 +2,29 @@ import React from 'react'
 import { Volume2, VolumeX, User, Coins, RefreshCw, LogIn, UserPlus } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { useAudio } from '../../hooks/useAudio'
+import { CasinoGame } from '../../types'
+
+export const CASINO_GAMES: Array<{ id: CasinoGame; name: string; icon: string }> = [
+  { id: 'mines', name: 'Mines', icon: '💣' },
+  { id: 'slots', name: 'Slots', icon: '🎰' },
+  { id: 'roulette', name: 'Roulette', icon: '🎡' },
+  { id: 'blackjack', name: 'Blackjack', icon: '🃏' },
+  { id: 'coinflip', name: 'Coin Flip', icon: '🪙' },
+]
 
 interface HeaderProps {
+  activeGame: CasinoGame
+  onSelectGame: (game: CasinoGame) => void
   onOpenAuth: (tab: 'signin' | 'register') => void
   onOpenProfile: () => void
 }
 
-export const Header: React.FC<HeaderProps> = ({ onOpenAuth, onOpenProfile }) => {
+export const Header: React.FC<HeaderProps> = ({
+  activeGame,
+  onSelectGame,
+  onOpenAuth,
+  onOpenProfile,
+}) => {
   const { user, refreshProfile, serverOnline } = useAuthStore()
   const { muted, toggleMute, playClick } = useAudio()
   const [isRefreshing, setIsRefreshing] = React.useState(false)
@@ -135,6 +151,33 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAuth, onOpenProfile }) => 
             </button>
           )}
         </div>
+      </div>
+
+      {/* Sub-Header: Responsive Casino Game Navigation Bar */}
+      <div className="max-w-7xl mx-auto mt-2 pt-2 border-t border-tile-border/40 flex items-center justify-start sm:justify-center overflow-x-auto no-scrollbar gap-1.5 py-0.5">
+        {CASINO_GAMES.map((game) => (
+          <button
+            key={game.id}
+            onClick={() => {
+              playClick()
+              onSelectGame(game.id)
+            }}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap flex-shrink-0 ${
+              activeGame === game.id
+                ? 'bg-primary text-black shadow-md font-extrabold shadow-primary/20'
+                : 'bg-tile/50 hover:bg-tile border border-tile-border/60 text-text-secondary hover:text-white'
+            }`}
+          >
+            <span className="text-sm">{game.icon}</span>
+            <span>{game.name}</span>
+            {game.id === 'mines' && (
+              <span className="text-[9px] px-1 py-0.2 bg-black/30 rounded font-mono">HOT</span>
+            )}
+            {game.id === 'slots' && (
+              <span className="text-[9px] px-1 py-0.2 bg-black/30 rounded font-mono">NEW</span>
+            )}
+          </button>
+        ))}
       </div>
     </header>
   )

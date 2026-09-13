@@ -14,6 +14,11 @@ import { useAdminStore } from './store/adminStore'
 import { useAudio } from './hooks/useAudio'
 import confetti from 'canvas-confetti'
 import { Keyboard, AlertCircle } from 'lucide-react'
+import { SlotsView } from './components/slots/SlotsView'
+import { RouletteView } from './components/roulette/RouletteView'
+import { BlackjackView } from './components/blackjack/BlackjackView'
+import { CoinFlipView } from './components/coinflip/CoinFlipView'
+import { CasinoGame } from './types'
 
 export const App: React.FC = () => {
   const { checkServer, refreshProfile, serverOnline } = useAuthStore()
@@ -26,6 +31,22 @@ export const App: React.FC = () => {
   const [authInitialTab, setAuthInitialTab] = useState<'signin' | 'register'>('signin')
   const [profileModalOpen, setProfileModalOpen] = useState(false)
   const [howToPlayModalOpen, setHowToPlayModalOpen] = useState(false)
+
+  // Active Casino Game (Mines, Slots, Roulette, Blackjack, Coin Flip)
+  const [activeGame, setActiveGame] = useState<CasinoGame>(() => {
+    const hash = window.location.hash.replace('#', '').toLowerCase()
+    if (['mines', 'slots', 'roulette', 'blackjack', 'coinflip'].includes(hash)) {
+      return hash as CasinoGame
+    }
+    return 'mines'
+  })
+
+  const handleSelectGame = useCallback((game: CasinoGame) => {
+    setActiveGame(game)
+    if (window.location.hash !== `#${game}`) {
+      window.location.hash = game
+    }
+  }, [])
 
   // Admin View State (triggered by #admin hash, footer button, or Ctrl+Shift+A)
   const [isAdminView, setIsAdminView] = useState(() => {
@@ -89,8 +110,9 @@ export const App: React.FC = () => {
         return
       }
 
-      // Spacebar hotkey
+      // Spacebar hotkey (for Mines game only; other games handle their own Space key)
       if (e.code === 'Space') {
+        if (activeGame !== 'mines') return
         e.preventDefault()
         if (isLoading || authModalOpen || profileModalOpen || howToPlayModalOpen || adminLoginModalOpen) return
 
@@ -117,6 +139,7 @@ export const App: React.FC = () => {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [
+    activeGame,
     gameState,
     revealedCount,
     isLoading,
@@ -150,6 +173,8 @@ export const App: React.FC = () => {
     <div className="min-h-screen bg-background text-text-primary flex flex-col selection:bg-primary/30 selection:text-primary">
       {/* Top Header */}
       <Header
+        activeGame={activeGame}
+        onSelectGame={handleSelectGame}
         onOpenAuth={handleOpenAuth}
         onOpenProfile={() => setProfileModalOpen(true)}
       />
@@ -166,34 +191,41 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        {/* Game Layout: Responsive Left Betting Controls + Center/Right Mines Board */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Left Panel: Betting Controls (Col 1-5 on LG) */}
-          <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-4">
-            <BettingControls />
+        {/* Selected Casino Game View */}
+        {activeGame === 'mines' && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* Left Panel: Betting Controls (Col 1-5 on LG) */}
+            <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-4">
+              <BettingControls />
 
-            {/* Quick Keyboard Hotkey Pill */}
-            <div className="hidden sm:flex items-center justify-between px-4 py-2.5 bg-panel/50 border border-tile-border/50 rounded-xl text-xs text-text-secondary">
-              <div className="flex items-center gap-2">
-                <Keyboard className="w-3.5 h-3.5 text-primary" />
-                <span>Hotkey:</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <kbd className="px-2 py-0.5 bg-tile border border-tile-border rounded text-[10px] font-mono text-text-primary font-bold shadow-sm">
-                  Space
-                </kbd>
-                <span className="text-[11px]">
-                  {gameState === 'ACTIVE' ? 'Cashout' : 'Start Bet'}
-                </span>
+              {/* Quick Keyboard Hotkey Pill */}
+              <div className="hidden sm:flex items-center justify-between px-4 py-2.5 bg-panel/50 border border-tile-border/50 rounded-xl text-xs text-text-secondary">
+                <div className="flex items-center gap-2">
+                  <Keyboard className="w-3.5 h-3.5 text-primary" />
+                  <span>Hotkey:</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <kbd className="px-2 py-0.5 bg-tile border border-tile-border rounded text-[10px] font-mono text-text-primary font-bold shadow-sm">
+                    Space
+                  </kbd>
+                  <span className="text-[11px]">
+                    {gameState === 'ACTIVE' ? 'Cashout' : 'Start Bet'}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Right Panel: Board (Col 6-12 on LG) */}
-          <div className="lg:col-span-7 xl:col-span-8 flex flex-col items-center justify-center min-h-[460px]">
-            <Board />
+            {/* Right Panel: Board (Col 6-12 on LG) */}
+            <div className="lg:col-span-7 xl:col-span-8 flex flex-col items-center justify-center min-h-[460px]">
+              <Board />
+            </div>
           </div>
-        </div>
+        )}
+
+        {activeGame === 'slots' && <SlotsView />}
+        {activeGame === 'roulette' && <RouletteView />}
+        {activeGame === 'blackjack' && <BlackjackView />}
+        {activeGame === 'coinflip' && <CoinFlipView />}
 
         {/* Footer */}
         <Footer
